@@ -74,13 +74,22 @@ export default function Hero() {
             Commencer maintenant
             <span className="text-xl">→</span>
           </Link>
-          <a
-            href="#exemples"
-            className="btn-outline px-8 py-4 rounded-full text-white font-semibold text-lg inline-flex items-center gap-2"
-          >
-            Voir les exemples
-            <span>↓</span>
-          </a>
+
+          {/* Avis clients */}
+          <div className="flex items-center gap-3 glass px-5 py-3 rounded-full border border-white/10">
+            <div className="flex -space-x-2">
+              {["M","S","L"].map((initial, i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-xs font-bold text-white"
+                  style={{ background: ["#7c3aed","#3b82f6","#ec4899"][i] }}>
+                  {initial}
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="flex text-yellow-400 text-xs leading-none mb-0.5">★★★★★</div>
+              <div className="text-gray-400 text-xs">+12 clients satisfaits</div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Stats */}
