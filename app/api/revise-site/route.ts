@@ -11,7 +11,7 @@ async function callClaudeRaw(prompt: string, maxTokens: number): Promise<string>
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: maxTokens,
       messages: [{ role: "user", content: prompt }],
     }),
@@ -87,7 +87,7 @@ Effectue UNIQUEMENT la modification demandée par le client, sans changer le res
 Conserve tout le design, les couleurs, les animations et la structure existante.
 Réponds UNIQUEMENT avec le code HTML complet modifié, sans aucune explication ni markdown.`;
 
-    let newHtml = await callClaudeRaw(prompt, 8192);
+    let newHtml = await callClaudeRaw(prompt, 6000);
     if (newHtml.startsWith("```html")) newHtml = newHtml.slice(7);
     if (newHtml.startsWith("```")) newHtml = newHtml.slice(3);
     if (newHtml.endsWith("```")) newHtml = newHtml.slice(0, -3);
