@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
     // Marquer comme en cours de révision
     await supabase.from("orders").update({ status: "generating" }).eq("id", orderId);
 
-    // Lancer la révision en arrière-plan
-    reviseSiteAndDeliver(orderId, order, request, supabase).catch(console.error);
+    // Révision synchrone (Vercel tue les background functions sur Hobby)
+    await reviseSiteAndDeliver(orderId, order, request, supabase);
 
     return NextResponse.json({ success: true, message: "Révision en cours, vous recevrez un email dans quelques minutes." });
   } catch (err) {
