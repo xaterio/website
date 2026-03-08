@@ -8,7 +8,14 @@ interface Props {
   onChange: (data: Partial<OrderData>) => void;
 }
 
+const RESTAURANT_TYPES = ["restaurant", "boulangerie", "cafe", "traiteur", "pizzeria", "bar"];
+
 export default function QuizStep6Chat({ data, onChange }: Props) {
+  const isResto = RESTAURANT_TYPES.some(t =>
+    (data.businessType || "").toLowerCase().includes(t) ||
+    (data.businessTypeLabel || "").toLowerCase().includes(t)
+  );
+
   return (
     <div>
       <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
@@ -47,8 +54,8 @@ export default function QuizStep6Chat({ data, onChange }: Props) {
         </motion.div>
       </div>
 
-      {/* Complement chatbox */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      {/* Chatbox — uniquement pour les restaurants (les autres la voient à l'étape 5) */}
+      {isResto && <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-3">Complément</p>
         <div className="rounded-2xl overflow-hidden border border-white/10" style={{ background: "rgba(255,255,255,0.03)" }}>
 
@@ -99,7 +106,7 @@ export default function QuizStep6Chat({ data, onChange }: Props) {
             <p className="text-gray-600 text-xs text-right">Optionnel · Plus vous détaillez, meilleur sera le résultat</p>
           </div>
         </div>
-      </motion.div>
+      </motion.div>}
     </div>
   );
 }
