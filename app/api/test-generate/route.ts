@@ -72,6 +72,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create test order", details: insertError }, { status: 500 });
   }
 
+  // Diagnostic: test raw fetch to Anthropic API before using SDK
+  try {
+    const diagRes = await fetch("https://api.anthropic.com/v1/models", {
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "anthropic-version": "2023-06-01",
+      },
+    });
+    const diagStatus = diagRes.status;
+    if (diagStatus !== 200) {
+      const diagBody = await diagRes.text();
+      await supabase.from("orders").update({ status: "error", info: { _error: `Fetch diag ${diagStatus}: ${diagBody.slice(0, 200)}` } }).eq("id", order.id);
+      return NextResponse.json({ error: `Anthropic API fetch failed: ${diagStatus}`, body: diagBody.slice(0, 200), orderId: order.id }, { status: 500 });
+    }
+  } catch (diagErr) {
+    await supabase.from("orders").update({ status: "error", info: { _error: `Fetch diag threw: ${String(diagErr)}` } }).eq("id", order.id);
+    return NextResponse.json({ error: `Raw fetch to api.anthropic.com failed: ${String(diagErr)}`, orderId: order.id }, { status: 500 });
+  }
+
   try {
     const siteHtml = await generateWebsite(TEST_ORDER as never);
 
