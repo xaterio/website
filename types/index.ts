@@ -5,6 +5,7 @@ export type BusinessType =
   | "coiffeur"
   | "commerce"
   | "association"
+  | "hebergement"
   | "autre";
 
 export type StylePreference =

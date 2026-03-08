@@ -10,6 +10,7 @@ const businesses: { value: BusinessType; label: string; icon: string; desc: stri
   { value: "coiffeur", label: "Beauté / Bien-être", icon: "💇", desc: "Coiffeur, esthéticienne, spa, nail art..." },
   { value: "commerce", label: "Commerce / Boutique", icon: "🛍️", desc: "Boutique physique, vitrine en ligne, marché..." },
   { value: "association", label: "Association / ONG", icon: "🤝", desc: "Association, club sportif, ONG..." },
+  { value: "hebergement", label: "Hôtel / Airbnb", icon: "🏨", desc: "Hôtel, Airbnb, chambre d'hôtes, gîte..." },
   { value: "autre", label: "Autre activité", icon: "✨", desc: "Coach, consultant, auto-entrepreneur..." },
 ];
 
