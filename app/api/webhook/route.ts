@@ -80,6 +80,10 @@ async function generateSiteAndDeliver(
       phone: info.phone || "",
       email: info.contactEmail || "",
       menuText: info.menuText || "",
+      testimonials: info.testimonials ? JSON.parse(info.testimonials) : undefined,
+      customWants: info.customWants || "",
+      customDontWants: info.customDontWants || "",
+      freeDescription: info.freeDescription || "",
     });
 
     // Save generated HTML to DB

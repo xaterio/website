@@ -7,10 +7,6 @@ export interface RestaurantContent {
   heroSub: string;
   heroCta1: string;
   heroCta2: string;
-  imgHero1: string;   // Unsplash keyword for large hero image
-  imgHero2: string;   // Unsplash keyword for 2nd hero image
-  imgHero3: string;   // Unsplash keyword for 3rd hero image
-  imgAbout: string;   // Unsplash keyword for about section
   stat1Num: string;
   stat1Label: string;
   stat2Num: string;
@@ -91,36 +87,33 @@ nav.scrolled{background:var(--bg);border-bottom:1px solid var(--border);padding:
 .nav-burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
 .nav-burger span{display:block;width:22px;height:2px;background:var(--text);transition:.3s;border-radius:2px}
 /* HERO */
-section.hero{min-height:100vh;padding:130px 48px 90px;display:flex;align-items:center;gap:60px;max-width:1280px;margin:0 auto}
-.hero-content{flex:1;min-width:0}
+section.hero{min-height:100vh;padding:0 48px;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+section.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%);pointer-events:none}
+.hero-content{max-width:860px;position:relative;z-index:1}
 .hero-tag{display:inline-flex;align-items:center;gap:10px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:28px}
-.hero-tag::before{content:'';display:block;width:28px;height:1.5px;background:var(--accent)}
-.hero h1{font-size:clamp(52px,7vw,92px);font-weight:900;line-height:1.02;margin-bottom:26px;letter-spacing:-2.5px}
+.hero-tag::before,.hero-tag::after{content:'';display:block;width:28px;height:1.5px;background:var(--accent)}
+.hero h1{font-size:clamp(56px,8vw,110px);font-weight:900;line-height:1.0;margin-bottom:28px;letter-spacing:-3px}
 .hero h1 em{font-style:italic;color:var(--accent)}
-.hero-sub{font-size:18px;color:var(--muted);margin-bottom:44px;max-width:460px;line-height:1.75}
-.hero-btns{display:flex;gap:16px;flex-wrap:wrap}
+.hero-sub{font-size:19px;color:var(--muted);margin-bottom:48px;max-width:560px;line-height:1.75;margin-inline:auto}
+.hero-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
 .btn-primary{background:var(--accent);color:var(--accent-text);padding:17px 34px;border-radius:50px;font-weight:700;font-size:15px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .2s,opacity .2s;white-space:nowrap}
 .btn-primary:hover{transform:translateY(-2px);opacity:.9}
 .btn-secondary{border:1.5px solid var(--border);color:var(--text);padding:17px 34px;border-radius:50px;font-weight:600;font-size:15px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s;white-space:nowrap}
 .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
-.hero-stats{display:flex;gap:48px;margin-top:52px;padding-top:44px;border-top:1px solid var(--border)}
-.stat-num{font-size:34px;font-weight:900;display:block;letter-spacing:-1px}
-.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}
-.hero-visual{flex:0 0 480px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px}
-.hero-card{border-radius:20px;overflow:hidden;background:var(--bg2);border:1px solid var(--border)}
-.hero-card img{width:100%;height:100%;object-fit:cover;display:block}
-.hero-card:first-child{grid-row:span 2;min-height:380px}
-.hero-card:nth-child(2){min-height:180px}
-.hero-card:nth-child(3){min-height:180px}
+.hero-stats{display:flex;gap:0;margin-top:64px;padding-top:44px;border-top:1px solid var(--border);justify-content:center}
+.hero-stats>div{flex:1;max-width:180px;padding:0 24px;border-right:1px solid var(--border)}
+.hero-stats>div:last-child{border-right:none}
+.stat-num{font-size:38px;font-weight:900;display:block;letter-spacing:-1.5px}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:4px}
 /* ABOUT */
 section.about{padding:110px 48px;background:var(--bg2)}
-.about-inner{max-width:1280px;margin:0 auto;display:flex;gap:80px;align-items:center}
-.about-text{flex:1}
+.about-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1.4fr;gap:80px;align-items:start}
+.about-left .section-tag{margin-bottom:18px}
+.about-left h2{font-size:clamp(36px,4vw,52px);font-weight:900;line-height:1.08;letter-spacing:-1.5px}
 .section-tag{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
 .about-text h2,.section-header h2{font-size:clamp(36px,4vw,54px);font-weight:900;line-height:1.08;margin-bottom:26px;letter-spacing:-1.5px}
-.about-text p{color:var(--muted);font-size:16px;line-height:1.85;margin-bottom:22px}
-.about-visual{flex:0 0 420px;border-radius:28px;min-height:420px;overflow:hidden;border:1px solid var(--border)}
-.about-visual img{width:100%;height:100%;object-fit:cover;display:block}
+.about-right p{color:var(--muted);font-size:16px;line-height:1.85;margin-bottom:22px}
+.about-right p:last-of-type{margin-bottom:28px}
 /* MENU */
 section.menu-section{padding:110px 48px}
 .menu-inner{max-width:1280px;margin:0 auto}
@@ -138,7 +131,7 @@ section.menu-section{padding:110px 48px}
 /* TESTIMONIALS */
 section.testimonials{padding:110px 48px;background:var(--bg2)}
 .testi-inner{max-width:1280px;margin:0 auto}
-.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-top:52px}
 .testi-card{padding:34px;border-radius:22px;background:var(--bg);border:1px solid var(--border)}
 .stars{color:var(--accent);font-size:15px;margin-bottom:18px;letter-spacing:3px}
 .testi-text{font-size:15px;line-height:1.75;color:var(--muted);margin-bottom:22px;font-style:italic}
@@ -180,20 +173,16 @@ footer{padding:48px;border-top:1px solid var(--border)}
 .mobile-nav a{font-size:28px;font-weight:800;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);padding:20px 0}
 .mobile-nav a:last-child{background:var(--accent);color:var(--accent-text);text-align:center;border-radius:16px;border:none;margin-top:24px;padding:18px}
 /* RESPONSIVE */
-@media(max-width:1024px){
-  .hero-visual{flex:0 0 380px}
-}
 @media(max-width:768px){
   nav{padding:16px 20px}
   nav.scrolled{padding:12px 20px}
   .nav-links,.nav-cta{display:none}
   .nav-burger{display:flex}
-  section.hero{flex-direction:column;padding:110px 20px 60px;gap:44px}
-  .hero-visual{flex:none;width:100%;max-width:100%}
-  .hero-stats{gap:24px}
-  .stat-num{font-size:26px}
-  .about-inner{flex-direction:column;gap:44px}
-  .about-visual{flex:none;width:100%;min-height:260px}
+  section.hero{padding:0 20px}
+  .hero-stats{gap:0}
+  .hero-stats>div{padding:0 14px}
+  .stat-num{font-size:28px}
+  .about-inner{grid-template-columns:1fr;gap:36px}
   .testi-grid{grid-template-columns:1fr}
   .contact-inner{grid-template-columns:1fr;gap:48px}
   section.about,section.menu-section,section.testimonials,section.contact-section{padding:70px 20px}
@@ -206,7 +195,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
 <body>
 
 <nav id="navbar">
-  <a href="#" class="nav-logo">${businessName}</a>
+  <a href="#accueil" class="nav-logo" aria-label="Accueil"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
   <ul class="nav-links">
     <li><a href="#accueil">Accueil</a></li>
     <li><a href="#menu">Menu</a></li>
@@ -242,23 +231,19 @@ footer{padding:48px;border-top:1px solid var(--border)}
       <div><span class="stat-num">${content.stat3Num}</span><div class="stat-label">${content.stat3Label}</div></div>
     </div>
   </div>
-  <div class="hero-visual">
-    <div class="hero-card"><img src="https://source.unsplash.com/featured/600x900/?${encodeURIComponent(content.imgHero1)}" alt="${businessName}" loading="eager"></div>
-    <div class="hero-card"><img src="https://source.unsplash.com/featured/400x400/?${encodeURIComponent(content.imgHero2)}" alt="" loading="lazy"></div>
-    <div class="hero-card"><img src="https://source.unsplash.com/featured/400x400/?${encodeURIComponent(content.imgHero3)}" alt="" loading="lazy"></div>
-  </div>
 </section>
 
 <section class="about" id="histoire">
   <div class="about-inner">
-    <div class="about-text fade-up">
+    <div class="about-left fade-up">
       <div class="section-tag">${content.aboutTag}</div>
       <h2>${content.aboutTitle}</h2>
+    </div>
+    <div class="about-right fade-up" style="transition-delay:.1s">
       <p>${content.aboutP1}</p>
       <p>${content.aboutP2}</p>
-      <a href="#contact" class="btn-primary" style="margin-top:12px;display:inline-flex">${content.aboutCta} →</a>
+      <a href="#contact" class="btn-primary" style="display:inline-flex">${content.aboutCta} →</a>
     </div>
-    <div class="about-visual"><img src="https://source.unsplash.com/featured/800x800/?${encodeURIComponent(content.imgAbout)}" alt="${businessName}" loading="lazy"></div>
   </div>
 </section>
 
@@ -278,6 +263,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
   </div>
 </section>
 
+${content.testi1Text ? `
 <section class="testimonials">
   <div class="testi-inner">
     <div class="section-header fade-up">
@@ -286,11 +272,11 @@ footer{padding:48px;border-top:1px solid var(--border)}
     </div>
     <div class="testi-grid">
       <div class="testi-card fade-up"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi1Text}"</p><div class="testi-author">${content.testi1Name}</div><div class="testi-city">${content.testi1City}</div></div>
-      <div class="testi-card fade-up" style="transition-delay:.1s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi2Text}"</p><div class="testi-author">${content.testi2Name}</div><div class="testi-city">${content.testi2City}</div></div>
-      <div class="testi-card fade-up" style="transition-delay:.2s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi3Text}"</p><div class="testi-author">${content.testi3Name}</div><div class="testi-city">${content.testi3City}</div></div>
+      ${content.testi2Text ? `<div class="testi-card fade-up" style="transition-delay:.1s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi2Text}"</p><div class="testi-author">${content.testi2Name}</div><div class="testi-city">${content.testi2City}</div></div>` : ""}
+      ${content.testi3Text ? `<div class="testi-card fade-up" style="transition-delay:.2s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi3Text}"</p><div class="testi-author">${content.testi3Name}</div><div class="testi-city">${content.testi3City}</div></div>` : ""}
     </div>
   </div>
-</section>
+</section>` : ""}
 
 <section class="contact-section" id="contact">
   <div class="contact-inner">

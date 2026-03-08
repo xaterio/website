@@ -16,58 +16,80 @@ export default function QuizStep5({ data, onChange }: Props) {
     (data.businessTypeLabel || "").toLowerCase().includes(t)
   );
 
-  if (!isResto) {
-    return (
-      <div>
-        <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
-          Presque terminé !
-        </h2>
-        <p className="text-gray-400 mb-8">
-          Vos informations sont complètes. Cliquez sur &ldquo;Finaliser&rdquo; pour passer à la commande.
-        </p>
-        <div className="glass rounded-2xl p-8 border border-white/5 text-center">
-          <div className="text-5xl mb-4">✅</div>
-          <p className="text-white font-bold text-lg">Tout est prêt !</p>
-          <p className="text-gray-400 text-sm mt-2">Nous allons créer votre site sur mesure.</p>
-        </div>
-      </div>
-    );
-  }
+  const testimonials = data.testimonials || [
+    { name: "", city: "", text: "" },
+    { name: "", city: "", text: "" },
+    { name: "", city: "", text: "" },
+  ];
+
+  const updateTesti = (index: number, field: "name" | "city" | "text", value: string) => {
+    const updated = testimonials.map((t, i) => i === index ? { ...t, [field]: value } : t);
+    onChange({ testimonials: updated });
+  };
 
   return (
     <div>
       <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
-        Votre carte / menu
+        Votre contenu
       </h2>
       <p className="text-gray-400 mb-8">
-        Listez vos plats et prix. Plus c&apos;est détaillé, plus le site sera précis.
-        Si vous n&apos;avez pas encore de menu, laissez vide — on inventera un menu réaliste.
+        Renseignez vos vraies informations — le site sera fidèle à ce que vous mettez ici.
       </p>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <label className="block text-sm font-medium text-gray-300 mb-3">
-          Vos plats et prix (format libre)
+      {isResto && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <label className="block text-sm font-bold text-white mb-1">
+            🍽️ Votre carte / menu
+          </label>
+          <p className="text-gray-500 text-xs mb-3">Listez vos plats et prix. Laissez vide si vous n&apos;avez pas encore de menu.</p>
+          <textarea
+            value={data.menuText || ""}
+            onChange={(e) => onChange({ menuText: e.target.value })}
+            placeholder={`Entrées :\n- Bruschetta tomate/basilic — 7€\n\nPizzas :\n- Margherita — 11€\n- 4 fromages — 13€\n\nDesserts :\n- Tiramisu maison — 7€`}
+            rows={10}
+            className="w-full glass rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none border border-white/5 focus:border-purple-500/50 transition-colors resize-none"
+          />
+        </motion.div>
+      )}
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <label className="block text-sm font-bold text-white mb-1">
+          ⭐ Avis clients réels <span className="text-gray-500 font-normal">(optionnel)</span>
         </label>
-        <textarea
-          value={data.menuText || ""}
-          onChange={(e) => onChange({ menuText: e.target.value })}
-          placeholder={`Exemple :
-Entrées :
-- Bruschetta tomate/basilic — 7€
-- Carpaccio de bœuf — 12€
-
-Pizzas :
-- Margherita — 11€
-- 4 fromages — 13€
-
-Desserts :
-- Tiramisu maison — 7€`}
-          rows={14}
-          className="w-full glass rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-500/50 border border-white/5 transition-colors resize-none"
-        />
-        <p className="text-gray-600 text-xs mt-2">
-          Vous pouvez aussi décrire des catégories, ingrédients, allergènes, etc.
+        <p className="text-gray-500 text-xs mb-4">
+          Si vous avez de vrais avis clients, ajoutez-les ici — sinon la section sera supprimée du site.
         </p>
+
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="glass rounded-xl p-4 border border-white/5">
+              <p className="text-xs text-gray-500 mb-3 font-semibold">Avis {i + 1}</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <input
+                  type="text"
+                  placeholder="Prénom et initiale (ex: Marie L.)"
+                  value={testimonials[i]?.name || ""}
+                  onChange={(e) => updateTesti(i, "name", e.target.value)}
+                  className="glass rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm border border-white/5 focus:border-purple-500/50 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Ville"
+                  value={testimonials[i]?.city || ""}
+                  onChange={(e) => updateTesti(i, "city", e.target.value)}
+                  className="glass rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm border border-white/5 focus:border-purple-500/50 focus:outline-none"
+                />
+              </div>
+              <textarea
+                placeholder="Le texte de l'avis..."
+                value={testimonials[i]?.text || ""}
+                onChange={(e) => updateTesti(i, "text", e.target.value)}
+                rows={2}
+                className="w-full glass rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm border border-white/5 focus:border-purple-500/50 focus:outline-none resize-none"
+              />
+            </div>
+          ))}
+        </div>
       </motion.div>
     </div>
   );

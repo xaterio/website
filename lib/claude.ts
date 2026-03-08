@@ -15,7 +15,7 @@ function isRestaurant(businessType: string): boolean {
 }
 
 export async function generateWebsite(
-  orderData: OrderData & { photosUrls?: string[]; menuText?: string }
+  orderData: OrderData & { photosUrls?: string[]; menuText?: string; testimonials?: Array<{name:string;city:string;text:string}>; customWants?: string; customDontWants?: string; freeDescription?: string }
 ): Promise<string> {
   const {
     businessName = "Mon Entreprise",
@@ -27,7 +27,21 @@ export async function generateWebsite(
     phone = "",
     email = "",
     menuText = "",
+    testimonials,
+    customWants = "",
+    customDontWants = "",
+    freeDescription = "",
   } = orderData;
+
+  // Build real testimonials block or flag to skip
+  const realTestis = (testimonials || []).filter(t => t.name && t.text);
+  const testiInstructions = realTestis.length > 0
+    ? `Témoignages RÉELS fournis par le client (utilise-les EXACTEMENT, ne les modifie pas) :\n${realTestis.map((t, i) => `  Avis ${i+1}: "${t.text}" — ${t.name}, ${t.city}`).join("\n")}`
+    : `Le client n'a pas fourni d'avis clients. Mets des chaînes VIDES pour testi1Text/testi1Name/testi1City etc.`;
+
+  const customInstructions = (customWants || customDontWants || freeDescription)
+    ? `\nINSTRUCTIONS PERSONNALISÉES DU CLIENT :${customWants ? `\n✅ Ce qu'il veut absolument : ${customWants}` : ""}${customDontWants ? `\n❌ Ce qu'il ne veut pas : ${customDontWants}` : ""}${freeDescription ? `\n💬 Description libre du client (respecte-la en priorité) : ${freeDescription}` : ""}`
+    : "";
 
   const theme = getTheme(styleLabel);
   const year = new Date().getFullYear().toString();
@@ -54,10 +68,6 @@ Génère ce JSON exactement (remplace toutes les valeurs par du contenu réel po
   "heroSub": "[phrase d'accroche 15-20 mots, authentique et appétissante]",
   "heroCta1": "Voir le menu",
   "heroCta2": "Réserver une table",
-  "imgHero1": "[mot-clé anglais Unsplash pour grande photo hero, ex: pizza-wood-fired,italian-pasta,sushi-restaurant]",
-  "imgHero2": "[mot-clé anglais Unsplash pour photo food 2, différent du 1er]",
-  "imgHero3": "[mot-clé anglais Unsplash pour photo food 3, différent des autres]",
-  "imgAbout": "[mot-clé anglais Unsplash pour section 'notre histoire', ex: chef-cooking,restaurant-kitchen,family-restaurant]",
   "stat1Num": "[chiffre avec +]", "stat1Label": "Années d'expérience",
   "stat2Num": "[chiffre]", "stat2Label": "Plats à la carte",
   "stat3Num": "[note /5]", "stat3Label": "Note Google",
@@ -78,10 +88,10 @@ Génère ce JSON exactement (remplace toutes les valeurs par du contenu réel po
     {"category": "[catégorie3]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
     {"category": "[catégorie3]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"}
   ],
-  "testiTitle": "[titre section avis clients]",
-  "testi1Text": "[avis client réaliste 20-30 mots]", "testi1Name": "[Prénom N.]", "testi1City": "[ville]",
-  "testi2Text": "[avis client réaliste 20-30 mots]", "testi2Name": "[Prénom N.]", "testi2City": "[ville]",
-  "testi3Text": "[avis client réaliste 20-30 mots]", "testi3Name": "[Prénom N.]", "testi3City": "[ville]",
+  "testiTitle": "Ce que disent nos clients",
+  "testi1Text": "", "testi1Name": "", "testi1City": "",
+  "testi2Text": "", "testi2Name": "", "testi2City": "",
+  "testi3Text": "", "testi3Name": "", "testi3City": "",
   "contactTitle": "[titre contact]",
   "address": "${address || "Adresse à renseigner"}",
   "phone": "${phone || "Téléphone à renseigner"}",
@@ -98,6 +108,8 @@ Génère ce JSON exactement (remplace toutes les valeurs par du contenu réel po
   "metaDesc": "[meta description SEO 150 chars]",
   "year": "${year}"
 }
+
+${testiInstructions}${customInstructions}
 
 IMPORTANT: Si le menu est fourni par le client, utilise ces plats/prix réels dans menuItems. Adapte les catégories selon le type de restaurant.
 Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
@@ -135,8 +147,6 @@ Génère ce JSON exactement :
   "heroSub": "[phrase d'accroche 15-20 mots, professionnelle et convaincante]",
   "heroCta1": "[CTA principal ex: Nos services, Prendre RDV]",
   "heroCta2": "[CTA secondaire ex: Nous appeler, Devis gratuit]",
-  "imgHero": "[mot-clé anglais Unsplash pour la photo hero, précis et visuel, ex: hairdresser-salon,plumber-work,doctor-consultation,bakery-bread]",
-  "imgAbout": "[mot-clé anglais Unsplash pour section à propos, ex: craftsman-workshop,professional-team,small-business]",
   "stat1Num": "[chiffre avec signe]", "stat1Label": "[métrique pertinente]",
   "stat2Num": "[chiffre avec signe]", "stat2Label": "[métrique pertinente]",
   "stat3Num": "[chiffre avec signe]", "stat3Label": "[métrique pertinente]",
@@ -160,10 +170,10 @@ Génère ce JSON exactement :
     {"q": "[question fréquente 3]", "a": "[réponse claire 20-30 mots]"},
     {"q": "[question fréquente 4]", "a": "[réponse claire 20-30 mots]"}
   ],
-  "testiTitle": "[titre section témoignages]",
-  "testi1Text": "[témoignage réaliste 20-30 mots]", "testi1Name": "[Prénom N.]", "testi1City": "[ville]",
-  "testi2Text": "[témoignage réaliste 20-30 mots]", "testi2Name": "[Prénom N.]", "testi2City": "[ville]",
-  "testi3Text": "[témoignage réaliste 20-30 mots]", "testi3Name": "[Prénom N.]", "testi3City": "[ville]",
+  "testiTitle": "Ce que disent nos clients",
+  "testi1Text": "", "testi1Name": "", "testi1City": "",
+  "testi2Text": "", "testi2Name": "", "testi2City": "",
+  "testi3Text": "", "testi3Name": "", "testi3City": "",
   "contactTitle": "[titre de la section contact]",
   "address": "${address || "Adresse à renseigner"}",
   "phone": "${phone || "Téléphone à renseigner"}",
@@ -174,6 +184,8 @@ Génère ce JSON exactement :
   "metaDesc": "[meta description SEO 150 chars]",
   "year": "${year}"
 }
+
+${testiInstructions}${customInstructions}
 
 Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 

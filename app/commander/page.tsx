@@ -9,16 +9,18 @@ import QuizStep2 from "@/components/order/QuizStep2";
 import QuizStep3 from "@/components/order/QuizStep3";
 import QuizStep4 from "@/components/order/QuizStep4";
 import QuizStep5 from "@/components/order/QuizStep5";
+import QuizStep6Chat from "@/components/order/QuizStep6Chat";
 import QuizStep6 from "@/components/order/QuizStep6";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const stepLabels = [
   "Activité",
   "Style",
   "Pages",
   "Infos",
-  "Menu",
+  "Contenu",
+  "Perso",
   "Commande",
 ];
 
@@ -27,8 +29,9 @@ const canProceed = (step: number, data: OrderData): boolean => {
   if (step === 2) return !!data.style;
   if (step === 3) return (data.pages || []).length > 0;
   if (step === 4) return !!(data.businessName && data.description);
-  if (step === 5) return true; // Menu optional
-  if (step === 6) return !!(data.clientEmail && data.clientName);
+  if (step === 5) return true;
+  if (step === 6) return true;
+  if (step === 7) return !!(data.clientEmail && data.clientName);
   return false;
 };
 
@@ -78,6 +81,7 @@ export default function CommanderPage() {
   };
 
   const progress = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+
 
   return (
     <div className="min-h-screen gradient-mesh py-8 px-4">
@@ -159,13 +163,14 @@ export default function CommanderPage() {
               {step === 3 && <QuizStep3 data={data} onChange={updateData} />}
               {step === 4 && <QuizStep4 data={data} onChange={updateData} />}
               {step === 5 && <QuizStep5 data={data} onChange={updateData} />}
-              {step === 6 && <QuizStep6 data={data} onChange={updateData} onSubmit={handleSubmit} loading={loading} />}
+              {step === 6 && <QuizStep6Chat data={data} onChange={updateData} />}
+              {step === 7 && <QuizStep6 data={data} onChange={updateData} onSubmit={handleSubmit} loading={loading} />}
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Navigation */}
-        {step < 6 && (
+        {step < 7 && (
           <div className="flex items-center justify-between mt-6">
             <button
               onClick={goPrev}
@@ -186,14 +191,14 @@ export default function CommanderPage() {
                   : "glass text-gray-600 cursor-not-allowed"
               }`}
             >
-              {step === 5 ? "Finaliser ma commande →" : "Continuer →"}
+              {step === 6 ? "Finaliser ma commande →" : "Continuer →"}
             </button>
           </div>
         )}
 
-        {step < 6 && (
+        {step < 7 && (
           <p className="text-center text-gray-700 text-xs mt-4">
-            {step === 5 ? "Le menu est optionnel (pour restaurants)" : "Cliquez sur une option pour continuer"}
+            {step >= 5 ? "Ces champs sont optionnels" : "Cliquez sur une option pour continuer"}
           </p>
         )}
       </div>

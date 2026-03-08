@@ -43,7 +43,12 @@ export interface OrderData {
   email?: string;
   // Étape 5
   menuText?: string;
+  testimonials?: Array<{ name: string; city: string; text: string }>;
   // Étape 6
+  customWants?: string;
+  customDontWants?: string;
+  freeDescription?: string;
+  // Étape 7
   clientEmail?: string;
   clientName?: string;
 }

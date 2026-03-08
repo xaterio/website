@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
       phone,
       email,
       menuText = "",
+      testimonials,
+      customWants,
+      customDontWants,
+      freeDescription,
     } = body;
 
     if (!clientEmail || !clientName) {
@@ -50,6 +54,10 @@ export async function POST(req: NextRequest) {
           phone,
           contactEmail: email,
           menuText,
+          testimonials: testimonials ? JSON.stringify(testimonials) : "",
+          customWants: customWants || "",
+          customDontWants: customDontWants || "",
+          freeDescription: freeDescription || "",
         },
         status: "pending",
       })
