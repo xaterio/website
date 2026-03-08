@@ -104,7 +104,11 @@ async function generateSiteAndDeliver(
 
     console.log(`✅ Site generated and delivered for order ${orderId}`);
   } catch (err) {
-    console.error(`❌ Error generating site for order ${orderId}:`, err);
-    await supabase.from("orders").update({ status: "error" }).eq("id", orderId);
+    const errMsg = err instanceof Error ? err.message + "\n" + err.stack : String(err);
+    console.error(`❌ Error generating site for order ${orderId}:`, errMsg);
+    await supabase.from("orders").update({
+      status: "error",
+      info: { ...((order.info as object) || {}), _error: errMsg.slice(0, 500) }
+    }).eq("id", orderId);
   }
 }
