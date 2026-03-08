@@ -8,7 +8,7 @@ const businesses: { value: BusinessType; label: string; icon: string; desc: stri
   { value: "artisan", label: "Artisan / Métier", icon: "🔨", desc: "Plombier, électricien, peintre, menuisier..." },
   { value: "medecin", label: "Médecin / Santé", icon: "🏥", desc: "Médecin, dentiste, kiné, psychologue..." },
   { value: "coiffeur", label: "Beauté / Bien-être", icon: "💇", desc: "Coiffeur, esthéticienne, spa, nail art..." },
-  { value: "commerce", label: "Commerce / Boutique", icon: "🛍️", desc: "Boutique physique, e-commerce, marché..." },
+  { value: "commerce", label: "Commerce / Boutique", icon: "🛍️", desc: "Boutique physique, vitrine en ligne, marché..." },
   { value: "association", label: "Association / ONG", icon: "🤝", desc: "Association, club sportif, ONG..." },
   { value: "autre", label: "Autre activité", icon: "✨", desc: "Coach, consultant, auto-entrepreneur..." },
 ];
