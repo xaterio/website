@@ -33,7 +33,8 @@
       "Bash(npx vercel --prod)",
       "Bash(npx vercel inspect website-d9jhteph1-alexandreammi38-9876s-projects.vercel.app --logs)",
       "Bash(node scripts/regen.mjs)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(node scripts/regen2.mjs)"
     ]
   }
 }

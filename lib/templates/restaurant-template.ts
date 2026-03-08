@@ -7,9 +7,10 @@ export interface RestaurantContent {
   heroSub: string;
   heroCta1: string;
   heroCta2: string;
-  heroEmoji1: string;
-  heroEmoji2: string;
-  heroEmoji3: string;
+  imgHero1: string;   // Unsplash keyword for large hero image
+  imgHero2: string;   // Unsplash keyword for 2nd hero image
+  imgHero3: string;   // Unsplash keyword for 3rd hero image
+  imgAbout: string;   // Unsplash keyword for about section
   stat1Num: string;
   stat1Label: string;
   stat2Num: string;
@@ -21,7 +22,6 @@ export interface RestaurantContent {
   aboutP1: string;
   aboutP2: string;
   aboutCta: string;
-  aboutEmoji: string;
   menuTitle: string;
   menuSub: string;
   menuItems: Array<{ category: string; name: string; desc: string; price: string }>;
@@ -107,10 +107,11 @@ section.hero{min-height:100vh;padding:130px 48px 90px;display:flex;align-items:c
 .stat-num{font-size:34px;font-weight:900;display:block;letter-spacing:-1px}
 .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}
 .hero-visual{flex:0 0 480px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px}
-.hero-card{border-radius:20px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
-.hero-card:first-child{grid-row:span 2;min-height:380px;font-size:72px}
-.hero-card:nth-child(2){min-height:180px;font-size:52px}
-.hero-card:nth-child(3){min-height:180px;font-size:52px;background:${theme.imgBg}}
+.hero-card{border-radius:20px;overflow:hidden;background:var(--bg2);border:1px solid var(--border)}
+.hero-card img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-card:first-child{grid-row:span 2;min-height:380px}
+.hero-card:nth-child(2){min-height:180px}
+.hero-card:nth-child(3){min-height:180px}
 /* ABOUT */
 section.about{padding:110px 48px;background:var(--bg2)}
 .about-inner{max-width:1280px;margin:0 auto;display:flex;gap:80px;align-items:center}
@@ -118,7 +119,8 @@ section.about{padding:110px 48px;background:var(--bg2)}
 .section-tag{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
 .about-text h2,.section-header h2{font-size:clamp(36px,4vw,54px);font-weight:900;line-height:1.08;margin-bottom:26px;letter-spacing:-1.5px}
 .about-text p{color:var(--muted);font-size:16px;line-height:1.85;margin-bottom:22px}
-.about-visual{flex:0 0 420px;border-radius:28px;min-height:420px;background:linear-gradient(135deg,${theme.imgBg},${theme.imgBg2});display:flex;align-items:center;justify-content:center;font-size:90px;border:1px solid var(--border)}
+.about-visual{flex:0 0 420px;border-radius:28px;min-height:420px;overflow:hidden;border:1px solid var(--border)}
+.about-visual img{width:100%;height:100%;object-fit:cover;display:block}
 /* MENU */
 section.menu-section{padding:110px 48px}
 .menu-inner{max-width:1280px;margin:0 auto}
@@ -241,9 +243,9 @@ footer{padding:48px;border-top:1px solid var(--border)}
     </div>
   </div>
   <div class="hero-visual">
-    <div class="hero-card">${content.heroEmoji1}</div>
-    <div class="hero-card">${content.heroEmoji2}</div>
-    <div class="hero-card">${content.heroEmoji3}</div>
+    <div class="hero-card"><img src="https://source.unsplash.com/featured/600x900/?${encodeURIComponent(content.imgHero1)}" alt="${businessName}" loading="eager"></div>
+    <div class="hero-card"><img src="https://source.unsplash.com/featured/400x400/?${encodeURIComponent(content.imgHero2)}" alt="" loading="lazy"></div>
+    <div class="hero-card"><img src="https://source.unsplash.com/featured/400x400/?${encodeURIComponent(content.imgHero3)}" alt="" loading="lazy"></div>
   </div>
 </section>
 
@@ -256,7 +258,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
       <p>${content.aboutP2}</p>
       <a href="#contact" class="btn-primary" style="margin-top:12px;display:inline-flex">${content.aboutCta} →</a>
     </div>
-    <div class="about-visual">${content.aboutEmoji}</div>
+    <div class="about-visual"><img src="https://source.unsplash.com/featured/800x800/?${encodeURIComponent(content.imgAbout)}" alt="${businessName}" loading="lazy"></div>
   </div>
 </section>
 

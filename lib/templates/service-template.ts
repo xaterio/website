@@ -7,7 +7,8 @@ export interface ServiceContent {
   heroSub: string;
   heroCta1: string;
   heroCta2: string;
-  heroEmoji: string;
+  imgHero: string;    // Unsplash keyword for hero image
+  imgAbout: string;   // Unsplash keyword for about image
   stat1Num: string; stat1Label: string;
   stat2Num: string; stat2Label: string;
   stat3Num: string; stat3Label: string;
@@ -100,7 +101,8 @@ section.hero{min-height:100vh;padding:130px 48px 90px;display:flex;align-items:c
 .hero-stats{display:flex;gap:48px;margin-top:52px;padding-top:44px;border-top:1px solid var(--border)}
 .stat-num{font-size:34px;font-weight:900;display:block;letter-spacing:-1px}
 .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}
-.hero-visual{flex:0 0 440px;border-radius:32px;min-height:480px;background:linear-gradient(135deg,${theme.imgBg},${theme.imgBg2});border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:100px}
+.hero-visual{flex:0 0 440px;border-radius:32px;min-height:480px;overflow:hidden;border:1px solid var(--border)}
+.hero-visual img{width:100%;height:100%;object-fit:cover;display:block}
 /* SERVICES */
 section.services{padding:110px 48px;background:var(--bg2)}
 .services-inner{max-width:1280px;margin:0 auto}
@@ -119,7 +121,8 @@ section.about{padding:110px 48px}
 .about-inner{max-width:1280px;margin:0 auto;display:flex;gap:80px;align-items:center}
 .about-text{flex:1}
 .about-text p{color:var(--muted);font-size:16px;line-height:1.85;margin-bottom:22px}
-.about-visual{flex:0 0 400px;border-radius:28px;min-height:400px;background:linear-gradient(135deg,${theme.imgBg},${theme.imgBg2});display:flex;align-items:center;justify-content:center;font-size:90px;border:1px solid var(--border)}
+.about-visual{flex:0 0 400px;border-radius:28px;min-height:400px;overflow:hidden;border:1px solid var(--border)}
+.about-visual img{width:100%;height:100%;object-fit:cover;display:block}
 /* FAQ */
 section.faq{padding:110px 48px;background:var(--bg2)}
 .faq-inner{max-width:800px;margin:0 auto}
@@ -231,7 +234,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
       <div><span class="stat-num">${content.stat3Num}</span><div class="stat-label">${content.stat3Label}</div></div>
     </div>
   </div>
-  <div class="hero-visual">${content.heroEmoji}</div>
+  <div class="hero-visual"><img src="https://source.unsplash.com/featured/880x960/?${encodeURIComponent(content.imgHero)}" alt="${businessName}" loading="eager"></div>
 </section>
 
 <section class="services" id="services">
@@ -256,7 +259,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
       <p>${content.aboutP2}</p>
       <a href="#contact" class="btn-primary" style="margin-top:12px;display:inline-flex">${content.aboutCta} →</a>
     </div>
-    <div class="about-visual">${content.heroEmoji}</div>
+    <div class="about-visual"><img src="https://source.unsplash.com/featured/800x800/?${encodeURIComponent(content.imgAbout)}" alt="${businessName}" loading="lazy"></div>
   </div>
 </section>
 
