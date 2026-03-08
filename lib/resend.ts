@@ -18,7 +18,7 @@ export async function sendDeliveryEmail({
   const siteUrl = `https://website-three-zeta-38.vercel.app/sites/${orderId}`;
 
   return resend.emails.send({
-    from: "Alexandre <onboarding@resend.dev>",
+    from: "Alexandre <contact@alexwebdesign.pro>",
     to,
     subject: `🎉 Votre site web "${businessName}" est prêt !`,
     html: `
@@ -87,7 +87,7 @@ export async function sendProspectionEmail({
   const greeting = directorName ? `Bonjour ${directorName}` : "Bonjour";
 
   return resend.emails.send({
-    from: "Alexandre <onboarding@resend.dev>",
+    from: "Alexandre <contact@alexwebdesign.pro>",
     to,
     subject: `Un site web professionnel pour ${companyName} ?`,
     html: `
