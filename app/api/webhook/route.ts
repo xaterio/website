@@ -7,6 +7,7 @@ import { sendDeliveryEmail } from "@/lib/resend";
 import Stripe from "stripe";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
