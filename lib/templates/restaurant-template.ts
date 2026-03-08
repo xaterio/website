@@ -129,14 +129,21 @@ section.menu-section{padding:110px 48px}
 .menu-item-desc{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6}
 .menu-item-price{font-size:22px;font-weight:900;color:var(--accent)}
 /* TESTIMONIALS */
-section.testimonials{padding:110px 48px;background:var(--bg2)}
+section.testimonials{padding:110px 48px;background:var(--bg2);overflow:hidden}
 .testi-inner{max-width:1280px;margin:0 auto}
-.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-top:52px}
-.testi-card{padding:34px;border-radius:22px;background:var(--bg);border:1px solid var(--border)}
+.testi-track-wrap{overflow:hidden;margin-top:52px;position:relative}
+.testi-track-wrap::before,.testi-track-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+.testi-track-wrap::before{left:0;background:linear-gradient(to right,var(--bg2),transparent)}
+.testi-track-wrap::after{right:0;background:linear-gradient(to left,var(--bg2),transparent)}
+.testi-track{display:flex;gap:24px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.testi-card{flex:0 0 340px;padding:34px;border-radius:22px;background:var(--bg);border:1px solid var(--border)}
 .stars{color:var(--accent);font-size:15px;margin-bottom:18px;letter-spacing:3px}
 .testi-text{font-size:15px;line-height:1.75;color:var(--muted);margin-bottom:22px;font-style:italic}
 .testi-author{font-weight:800;font-size:14px}
 .testi-city{font-size:12px;color:var(--muted);margin-top:3px}
+.testi-dots{display:flex;justify-content:center;gap:8px;margin-top:28px}
+.testi-dot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:background .3s,transform .3s;border:none}
+.testi-dot.active{background:var(--accent);transform:scale(1.3)}
 /* CONTACT */
 section.contact-section{padding:110px 48px}
 .contact-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
@@ -183,7 +190,7 @@ footer{padding:48px;border-top:1px solid var(--border)}
   .hero-stats>div{padding:0 14px}
   .stat-num{font-size:28px}
   .about-inner{grid-template-columns:1fr;gap:36px}
-  .testi-grid{grid-template-columns:1fr}
+  .testi-card{flex:0 0 280px}
   .contact-inner{grid-template-columns:1fr;gap:48px}
   section.about,section.menu-section,section.testimonials,section.contact-section{padding:70px 20px}
   .form-row{grid-template-columns:1fr}
@@ -270,11 +277,14 @@ ${content.testi1Text ? `
       <div class="section-tag" style="text-align:center">Avis clients</div>
       <h2>${content.testiTitle}</h2>
     </div>
-    <div class="testi-grid">
-      <div class="testi-card fade-up"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi1Text}"</p><div class="testi-author">${content.testi1Name}</div><div class="testi-city">${content.testi1City}</div></div>
-      ${content.testi2Text ? `<div class="testi-card fade-up" style="transition-delay:.1s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi2Text}"</p><div class="testi-author">${content.testi2Name}</div><div class="testi-city">${content.testi2City}</div></div>` : ""}
-      ${content.testi3Text ? `<div class="testi-card fade-up" style="transition-delay:.2s"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi3Text}"</p><div class="testi-author">${content.testi3Name}</div><div class="testi-city">${content.testi3City}</div></div>` : ""}
+    <div class="testi-track-wrap">
+      <div class="testi-track" id="testiTrack">
+        <div class="testi-card"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi1Text}"</p><div class="testi-author">${content.testi1Name}</div><div class="testi-city">${content.testi1City}</div></div>
+        ${content.testi2Text ? `<div class="testi-card"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi2Text}"</p><div class="testi-author">${content.testi2Name}</div><div class="testi-city">${content.testi2City}</div></div>` : ""}
+        ${content.testi3Text ? `<div class="testi-card"><div class="stars">★★★★★</div><p class="testi-text">"${content.testi3Text}"</p><div class="testi-author">${content.testi3Name}</div><div class="testi-city">${content.testi3City}</div></div>` : ""}
+      </div>
     </div>
+    <div class="testi-dots" id="testiDots"></div>
   </div>
 </section>` : ""}
 
@@ -347,6 +357,33 @@ document.querySelectorAll('.menu-cat-btn').forEach(btn => {
 });
 
 // Contact form
+// Carrousel avis
+(function(){
+  const track = document.getElementById('testiTrack');
+  const dotsEl = document.getElementById('testiDots');
+  if (!track) return;
+  const cards = track.querySelectorAll('.testi-card');
+  const count = cards.length;
+  if (count <= 1) return;
+  let current = 0;
+  const dots = [];
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement('button');
+    d.className = 'testi-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Avis ' + (i+1));
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+    dots.push(d);
+  }
+  function goTo(n) {
+    current = n;
+    const cardW = cards[0].offsetWidth + 24;
+    track.style.transform = 'translateX(-' + (cardW * n) + 'px)';
+    dots.forEach((d, i) => d.classList.toggle('active', i === n));
+  }
+  setInterval(() => goTo((current + 1) % count), 4000);
+})();
+
 document.getElementById('contactForm').addEventListener('submit', e => {
   e.preventDefault();
   const btn = e.target.querySelector('.form-submit');
