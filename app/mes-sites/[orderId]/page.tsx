@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -212,14 +212,15 @@ function RevisionChat({ orderId }: { orderId: string }) {
   );
 }
 
-export default function RevisionPage({ params }: { params: { orderId: string } }) {
+export default function RevisionPage({ params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = use(params);
   return (
     <Suspense fallback={
       <div className="min-h-screen gradient-mesh flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-purple-500 rounded-full animate-spin border-t-transparent" />
       </div>
     }>
-      <RevisionChat orderId={params.orderId} />
+      <RevisionChat orderId={orderId} />
     </Suspense>
   );
 }
