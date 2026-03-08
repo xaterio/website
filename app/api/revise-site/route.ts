@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { anthropic } from "@/lib/claude";
 import { sendDeliveryEmail } from "@/lib/resend";
+
+async function callClaudeRaw(prompt: string, maxTokens: number): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY!,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
+  const data = await res.json() as { content: Array<{ type: string; text: string }> };
+  return data.content[0].text;
+}
 
 export const runtime = "nodejs";
 
@@ -68,16 +86,7 @@ Effectue UNIQUEMENT la modification demandée par le client, sans changer le res
 Conserve tout le design, les couleurs, les animations et la structure existante.
 Réponds UNIQUEMENT avec le code HTML complet modifié, sans aucune explication ni markdown.`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") throw new Error("Unexpected response type");
-
-    let newHtml = content.text;
+    let newHtml = await callClaudeRaw(prompt, 8192);
     if (newHtml.startsWith("```html")) newHtml = newHtml.slice(7);
     if (newHtml.startsWith("```")) newHtml = newHtml.slice(3);
     if (newHtml.endsWith("```")) newHtml = newHtml.slice(0, -3);

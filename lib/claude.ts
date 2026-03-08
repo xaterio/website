@@ -1,12 +1,31 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { OrderData } from "@/types";
 import { getTheme } from "./templates/themes";
 import { buildRestaurantHtml, RestaurantContent } from "./templates/restaurant-template";
 import { buildServiceHtml, ServiceContent } from "./templates/service-template";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+async function callClaude(prompt: string, maxTokens: number): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY!,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${errBody.slice(0, 300)}`);
+  }
+
+  const data = await res.json() as { content: Array<{ type: string; text: string }> };
+  return data.content[0].text;
+}
 
 const RESTAURANT_TYPES = ["restaurant", "boulangerie", "cafe", "traiteur", "pizzeria", "bar"];
 
@@ -114,13 +133,7 @@ ${testiInstructions}${customInstructions}
 IMPORTANT: Si le menu est fourni par le client, utilise ces plats/prix réels dans menuItems. Adapte les catégories selon le type de restaurant.
 Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    let jsonStr = (message.content[0] as { type: string; text: string }).text.trim();
+    let jsonStr = (await callClaude(prompt, 4000)).trim();
     if (jsonStr.startsWith("```")) jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
 
     const content: RestaurantContent = JSON.parse(jsonStr);
@@ -189,13 +202,7 @@ ${testiInstructions}${customInstructions}
 
 Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    let jsonStr = (message.content[0] as { type: string; text: string }).text.trim();
+    let jsonStr = (await callClaude(prompt, 3000)).trim();
     if (jsonStr.startsWith("```")) jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
 
     const content: ServiceContent = JSON.parse(jsonStr);
