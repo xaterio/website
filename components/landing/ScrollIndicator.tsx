@@ -1,9 +1,30 @@
 "use client";
 
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion, useScroll, useSpring } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 
-const TUBE_H = 320;
+// Spirale SVG : 6 tours, largeur 36, hauteur 320
+const W = 36;
+const H = 320;
+const TURNS = 6;
+const CX = W / 2;
+
+// Génère les points de la spirale
+function buildSpiral(): string {
+  const pts: string[] = [];
+  const steps = TURNS * 40;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const angle = t * TURNS * 2 * Math.PI;
+    const r = (W / 2 - 3) * 0.85;
+    const x = CX + r * Math.sin(angle);
+    const y = H - t * H;
+    pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  return pts.join(" ");
+}
+
+const SPIRAL_PATH = buildSpiral();
 
 const sections = [
   { label: "Accueil",  href: "#",          pct: 0    },
@@ -16,113 +37,82 @@ const sections = [
 export default function ScrollIndicator() {
   const { scrollYProgress } = useScroll();
   const smooth = useSpring(scrollYProgress, { stiffness: 55, damping: 22 });
-  const fillH = useTransform(smooth, [0, 1], [0, TUBE_H]);
   const [progress, setProgress] = useState(0);
+  const [pathLen, setPathLen] = useState(1000);
+  const pathRef = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    if (pathRef.current) setPathLen(pathRef.current.getTotalLength());
+  }, []);
 
   useEffect(() => {
     return smooth.on("change", (v) => setProgress(v));
   }, [smooth]);
 
+  const filled = pathLen * progress;
+
   return (
-    <div className="fixed left-8 top-1/2 -translate-y-1/2 z-40 hidden xl:flex items-center gap-5">
+    <div className="fixed left-6 top-1/2 -translate-y-1/2 z-40 hidden xl:flex items-center gap-3">
 
-      {/* ── Tube ── */}
-      <div className="relative flex-shrink-0" style={{ width: 20, height: TUBE_H }}>
-
-        {/* Glass track */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "inset 0 2px 10px rgba(0,0,0,0.6)",
-          }}
-        />
-
-        {/* Liquid fill */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 rounded-full"
-          style={{
-            height: fillH,
-            background: "linear-gradient(to top, #3b0764, #6d28d9, #8b5cf6, #c4b5fd)",
-          }}
-        />
-
-        {/* Glass highlight stripe */}
-        <div
-          className="absolute top-3 bottom-3 rounded-full pointer-events-none"
-          style={{
-            left: 3,
-            width: 3,
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.14), transparent 55%)",
-          }}
-        />
-
-        {/* Surface glow */}
-        <motion.div
-          className="absolute pointer-events-none"
-          style={{
-            bottom: fillH,
-            left: -5,
-            right: -5,
-            height: 7,
-            borderRadius: "50%",
-            background: "rgba(167,139,250,0.9)",
-            filter: "blur(5px)",
-          }}
-          animate={{ opacity: [0.45, 1, 0.45], scaleX: [0.8, 1.25, 0.8] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Bubbles */}
-        <Bubble size={3.5} delay={0}   duration={4}   />
-        <Bubble size={2.5} delay={1.8} duration={5.5} />
-        <Bubble size={2}   delay={3.5} duration={4.5} />
-
-        {/* Section dots — light up when liquid reaches them */}
-        {sections.map((s) => {
-          const reached = progress >= s.pct - 0.015;
-          return (
-            <motion.div
-              key={s.label}
-              className="absolute rounded-full"
-              style={{
-                width: 12,
-                height: 12,
-                bottom: s.pct * TUBE_H - 6,
-                left: "50%",
-                marginLeft: -6,
-                zIndex: 2,
-                background: reached ? "#a78bfa" : "rgba(255,255,255,0.08)",
-                border: "2px solid rgba(255,255,255,0.18)",
-                boxShadow: reached ? "0 0 14px rgba(167,139,250,0.9), 0 0 4px rgba(167,139,250,0.5)" : "none",
-                transition: "background 0.4s, box-shadow 0.4s",
-              }}
-            />
-          );
-        })}
+      {/* Spirale SVG */}
+      <div className="relative flex-shrink-0" style={{ width: W, height: H }}>
+        <svg width={W} height={H} style={{ overflow: "visible" }}>
+          {/* Track (fond) */}
+          <path
+            d={SPIRAL_PATH}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          />
+          {/* Fill animé */}
+          <path
+            ref={pathRef}
+            d={SPIRAL_PATH}
+            fill="none"
+            stroke="url(#spiralGrad)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${pathLen - filled}`}
+            strokeDashoffset={0}
+            style={{ transition: "stroke-dasharray 0.3s ease" }}
+          />
+          {/* Lueur au bout */}
+          {progress > 0.01 && (() => {
+            const steps = TURNS * 40;
+            const idx = Math.round(progress * steps);
+            const t = idx / steps;
+            const angle = t * TURNS * 2 * Math.PI;
+            const r = (W / 2 - 3) * 0.85;
+            const x = CX + r * Math.sin(angle);
+            const y = H - t * H;
+            return (
+              <circle cx={x} cy={y} r={4} fill="#a78bfa"
+                style={{ filter: "drop-shadow(0 0 6px #a78bfa)" }} />
+            );
+          })()}
+          <defs>
+            <linearGradient id="spiralGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#3b0764" />
+              <stop offset="50%" stopColor="#7c3aed" />
+              <stop offset="100%" stopColor="#c4b5fd" />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
 
-      {/* ── Labels ── */}
-      <div className="relative" style={{ height: TUBE_H }}>
+      {/* Labels */}
+      <div className="relative" style={{ height: H }}>
         {sections.map((s) => {
           const reached = progress >= s.pct - 0.015;
           return (
-            <div
-              key={s.label}
-              className="absolute flex items-center gap-2"
-              style={{ bottom: s.pct * TUBE_H - 7 }}
-            >
-              {/* connecting dash */}
-              <div
-                className="h-px w-4 transition-colors duration-500"
-                style={{ background: reached ? "rgba(167,139,250,0.5)" : "rgba(255,255,255,0.06)" }}
-              />
-              <a
-                href={s.href}
-                className="text-sm font-medium leading-none whitespace-nowrap transition-colors duration-500"
-                style={{ color: reached ? "rgb(216,180,254)" : "rgb(75,85,99)" }}
-              >
+            <div key={s.label} className="absolute flex items-center gap-2"
+              style={{ bottom: s.pct * H - 7 }}>
+              <div className="h-px w-3 transition-colors duration-500"
+                style={{ background: reached ? "rgba(167,139,250,0.5)" : "rgba(255,255,255,0.06)" }} />
+              <a href={s.href}
+                className="text-xs font-medium leading-none whitespace-nowrap transition-colors duration-500"
+                style={{ color: reached ? "rgb(216,180,254)" : "rgb(75,85,99)" }}>
                 {s.label}
               </a>
             </div>
@@ -131,31 +121,5 @@ export default function ScrollIndicator() {
       </div>
 
     </div>
-  );
-}
-
-function Bubble({ size, delay, duration }: { size: number; delay: number; duration: number }) {
-  return (
-    <motion.div
-      className="absolute rounded-full pointer-events-none"
-      style={{
-        width: size,
-        height: size,
-        left: "50%",
-        marginLeft: -size / 2,
-        background: "rgba(196,181,253,0.55)",
-        bottom: 0,
-      }}
-      animate={{
-        y: [0, -TUBE_H * 0.88],
-        opacity: [0, 0.85, 0],
-      }}
-      transition={{
-        duration,
-        delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
   );
 }

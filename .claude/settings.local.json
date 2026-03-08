@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''d:\\\\website\\\\.next'' -ErrorAction SilentlyContinue; Write-Host ''done''\")",
+      "Bash(powershell -Command \"Test-Path ''d:\\\\website\\\\.next''\")",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(vercel whoami)",
+      "Bash(vercel env add NEXT_PUBLIC_SUPABASE_URL production --force)",
+      "Bash(vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production --force)",
+      "Bash(vercel env add SUPABASE_SERVICE_ROLE_KEY production --force)",
+      "Bash(vercel env add STRIPE_SECRET_KEY production --force)",
+      "Bash(vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production --force)",
+      "Bash(vercel env add STRIPE_WEBHOOK_SECRET production --force)",
+      "Bash(vercel env add RESEND_API_KEY production --force)",
+      "Bash(vercel --prod --yes)",
+      "Bash(vercel logs https://website-three-zeta-38.vercel.app)",
+      "Bash(vercel env add ANTHROPIC_API_KEY production)",
+      "Bash(npx vercel --version)",
+      "Bash(npx vercel ls)",
+      "Bash(npx vercel --prod --yes)",
+      "Bash(npx vercel logs website-three-zeta-38.vercel.app)",
+      "Bash(npx vercel inspect website-three-zeta-38.vercel.app)",
+      "Bash(npx vercel env rm STRIPE_WEBHOOK_SECRET production --yes)",
+      "Bash(npx vercel env add STRIPE_WEBHOOK_SECRET production)",
+      "Bash(printf 'whsec_JGeAUab8GFOiMZbxHOY2afp3nFQU0R6c')",
+      "Bash(git add lib/stripe.ts app/api/webhook/route.ts)",
+      "Bash(git commit:*)",
+      "Bash(npx vercel logs --prod)",
+      "Bash(npx vercel logs website-three-zeta-38.vercel.app --output raw)",
+      "Bash(npx vercel logs)",
+      "Bash(node -e \"require\\(''@vercel/functions''\\)\")",
+      "Bash(npm install @vercel/functions)",
+      "Bash(npx vercel --prod)",
+      "Bash(npx vercel inspect website-d9jhteph1-alexandreammi38-9876s-projects.vercel.app --logs)",
+      "Bash(node scripts/regen.mjs)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

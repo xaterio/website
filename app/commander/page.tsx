@@ -18,7 +18,7 @@ const stepLabels = [
   "Style",
   "Pages",
   "Infos",
-  "Photos",
+  "Menu",
   "Commande",
 ];
 
@@ -27,7 +27,7 @@ const canProceed = (step: number, data: OrderData): boolean => {
   if (step === 2) return !!data.style;
   if (step === 3) return (data.pages || []).length > 0;
   if (step === 4) return !!(data.businessName && data.description);
-  if (step === 5) return true; // Photos optional
+  if (step === 5) return true; // Menu optional
   if (step === 6) return !!(data.clientEmail && data.clientName);
   return false;
 };
@@ -59,30 +59,10 @@ export default function CommanderPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // Upload photos first if any
-      let photosUrls: string[] = [];
-      if (data.photos && data.photos.length > 0) {
-        const formData = new FormData();
-        data.photos.forEach((f) => formData.append("photos", f));
-        const uploadRes = await fetch("/api/upload-photos", {
-          method: "POST",
-          body: formData,
-        });
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          photosUrls = uploadData.urls;
-        }
-      }
-
-      // Create checkout session
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          photosUrls,
-          photos: undefined, // Don't send File objects
-        }),
+        body: JSON.stringify(data),
       });
 
       const resData = await res.json();
@@ -213,7 +193,7 @@ export default function CommanderPage() {
 
         {step < 6 && (
           <p className="text-center text-gray-700 text-xs mt-4">
-            {step === 5 ? "Les photos sont optionnelles" : "Cliquez sur une option pour continuer"}
+            {step === 5 ? "Le menu est optionnel (pour restaurants)" : "Cliquez sur une option pour continuer"}
           </p>
         )}
       </div>

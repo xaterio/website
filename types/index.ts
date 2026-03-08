@@ -42,8 +42,7 @@ export interface OrderData {
   phone?: string;
   email?: string;
   // Étape 5
-  photos?: File[];
-  photosUrls?: string[];
+  menuText?: string;
   // Étape 6
   clientEmail?: string;
   clientName?: string;

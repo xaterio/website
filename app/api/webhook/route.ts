@@ -79,7 +79,7 @@ async function generateSiteAndDeliver(
       address: info.address || "",
       phone: info.phone || "",
       email: info.contactEmail || "",
-      photosUrls: (order.photos_urls as string[]) || [],
+      menuText: info.menuText || "",
     });
 
     // Save generated HTML to DB

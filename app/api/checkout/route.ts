@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const body: OrderData & { photosUrls?: string[] } = await req.json();
+    const body: OrderData = await req.json();
     const {
       clientEmail,
       clientName,
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       address,
       phone,
       email,
-      photosUrls = [],
+      menuText = "",
     } = body;
 
     if (!clientEmail || !clientName) {
@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
           address,
           phone,
           contactEmail: email,
+          menuText,
         },
-        photos_urls: photosUrls,
         status: "pending",
       })
       .select()

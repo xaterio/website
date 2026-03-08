@@ -1,171 +1,191 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { OrderData } from "@/types";
+import { getTheme } from "./templates/themes";
+import { buildRestaurantHtml, RestaurantContent } from "./templates/restaurant-template";
+import { buildServiceHtml, ServiceContent } from "./templates/service-template";
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-export async function generateWebsite(orderData: OrderData & { photosUrls?: string[] }): Promise<string> {
+const RESTAURANT_TYPES = ["restaurant", "boulangerie", "cafe", "traiteur", "pizzeria", "bar"];
+
+function isRestaurant(businessType: string): boolean {
+  return RESTAURANT_TYPES.some(t => businessType.toLowerCase().includes(t));
+}
+
+export async function generateWebsite(
+  orderData: OrderData & { photosUrls?: string[]; menuText?: string }
+): Promise<string> {
   const {
-    businessName,
-    businessTypeLabel,
-    styleLabel,
-    pages = [],
-    description,
-    slogan,
-    address,
-    phone,
-    email,
-    photosUrls = [],
+    businessName = "Mon Entreprise",
+    businessType = "",
+    styleLabel = "Minimaliste & Clean",
+    description = "",
+    slogan = "",
+    address = "",
+    phone = "",
+    email = "",
+    menuText = "",
   } = orderData;
 
-  const styleGuide: Record<string, string> = {
-    "Moderne & Tech": `
-    - Dark mode profond (#0a0a0f background), gradients violet (#7c3aed) → bleu (#3b82f6) → cyan
-    - Effets glassmorphism (backdrop-filter: blur), borders lumineux rgba(255,255,255,0.1)
-    - Typographie: Inter ou Space Grotesk (Google Fonts), titres très bold (font-weight:900)
-    - Effets néon subtils sur les CTA (box-shadow: 0 0 30px rgba(124,58,237,0.5))
-    - Particules CSS ou formes géométriques flottantes en arrière-plan`,
-    "Élégant & Luxe": `
-    - Fond très sombre (#0d0d0d ou #1a1410), accents or (#D4AF37, #c9a84c)
-    - Typographie mixte: Playfair Display (titres serif) + Montserrat (corps)
-    - Espacement généreux, sections aérées, lignes fines dorées comme séparateurs
-    - Animations ultra-fluides, transitions lentes et élégantes (0.8s ease)
-    - Textures subtiles, overlay grain ou motif géométrique discret`,
-    "Coloré & Dynamique": `
-    - Fond blanc ou très clair, explosions de couleur vive (rose #ec4899, orange #f97316, violet)
-    - Typographie ronde et friendly: Nunito, Poppins ou Quicksand
-    - Dégradés animés sur les sections hero, boutons avec hover coloré vif
-    - Cards avec border-radius élevé, shadows colorées
-    - Illustrations SVG custom inline, formes organiques en background`,
-    "Minimaliste & Clean": `
-    - Fond blanc pur (#ffffff) ou off-white (#fafafa), accents noir (#111) et gris
-    - Typographie: DM Sans ou Outfit, très aéré, font-weight léger pour le corps
-    - Beaucoup d'espace blanc, grid asymétrique, micro-typographie soignée
-    - Animations minimalistes: fade-in simple, underline hover sur les liens
-    - Pas d'images inutiles, contenu centré sur le texte et les données`,
-    "Nature & Zen": `
-    - Palette: vert sauge (#87a878), beige (#f5efe6), terra cotta (#c4775a), blanc cassé
-    - Typographie: Lora (serif, titres) + Source Sans Pro (corps), doux et organique
-    - Textures naturelles SVG (feuilles, vagues douces), fond avec subtle noise texture
-    - Animations lentes et fluides, effet parallax subtil sur les images
-    - Formes organiques (border-radius asymétrique), sections en vague`,
-    "Professionnel & Corporate": `
-    - Fond blanc, accent bleu corporate (#1e40af ou #0f4c81), gris (#64748b)
-    - Typographie: Inter ou Roboto, propre et lisible, hiérarchie claire
-    - Grid structuré, sections bien délimitées, icônes professionnelles SVG
-    - Trust signals visuels: badges, chiffres clés mis en avant, témoignages
-    - CTA bleu foncé avec hover, header sticky avec ombre légère au scroll`,
-  };
+  const theme = getTheme(styleLabel);
+  const year = new Date().getFullYear().toString();
+  const useRestaurant = isRestaurant(businessType);
 
-  const currentStyleGuide = styleGuide[styleLabel || ""] || `
-    - Design moderne avec gradients, shadows profondes, animations fluides
-    - Palette cohérente avec la charte de l'entreprise
-    - Typographie Google Fonts premium, hiérarchie visuelle forte`;
+  if (useRestaurant) {
+    const prompt = `Tu es un expert en copywriting et contenu web pour restaurants.
 
-  const prompt = `Tu es le meilleur développeur web front-end au monde, expert en design UI/UX de niveau agence internationale top-tier (Awwwards, CSS Design Awards).
+Génère uniquement un objet JSON valide (sans markdown, sans explication) pour un site de restaurant avec ces infos :
 
-Crée le MEILLEUR site web possible — un site qui impressionne instantanément, qui donne confiance, et qui convertit des visiteurs en clients — pour cette entreprise :
+Nom: ${businessName}
+Description: ${description}
+Slogan: ${slogan || ""}
+Adresse: ${address || "Non précisée"}
+Téléphone: ${phone || "Non précisé"}
+Email: ${email || "contact@" + businessName.toLowerCase().replace(/\s+/g, "") + ".fr"}
+Menu fourni par le client: ${menuText || "Non fourni — invente un menu réaliste et appétissant"}
 
-═══════════════════════════════════
-INFORMATIONS CLIENT
-═══════════════════════════════════
-Entreprise : ${businessName || "Mon Entreprise"}
-Activité   : ${businessTypeLabel || "Entreprise"}
-Style      : ${styleLabel || "Moderne"}
-Description: ${description || "Une entreprise professionnelle de qualité"}
-Slogan     : ${slogan || ""}
-Adresse    : ${address || ""}
-Téléphone  : ${phone || ""}
-Email      : ${email || "contact@monentreprise.fr"}
-Pages      : ${pages.join(", ") || "Accueil, Contact"}
-${photosUrls.length > 0 ? `Photos     : ${photosUrls.join(", ")}` : ""}
+Génère ce JSON exactement (remplace toutes les valeurs par du contenu réel pour ce restaurant) :
+{
+  "heroTag": "Restaurant · Depuis [année réaliste]",
+  "heroTitle1": "[accroche percutante en 3-4 mots]",
+  "heroTitle2": "[2ème ligne de titre, en italique]",
+  "heroSub": "[phrase d'accroche 15-20 mots, authentique et appétissante]",
+  "heroCta1": "Voir le menu",
+  "heroCta2": "Réserver une table",
+  "heroEmoji1": "[emoji food approprié, grand]",
+  "heroEmoji2": "[emoji food]",
+  "heroEmoji3": "[emoji food ou ustensile]",
+  "stat1Num": "[chiffre avec +]", "stat1Label": "Années d'expérience",
+  "stat2Num": "[chiffre]", "stat2Label": "Plats à la carte",
+  "stat3Num": "[note /5]", "stat3Label": "Note Google",
+  "aboutTag": "Notre histoire",
+  "aboutTitle": "[titre de section accrocheur]",
+  "aboutP1": "[paragraphe 30-40 mots sur l'histoire/philosophie du restaurant]",
+  "aboutP2": "[paragraphe 25-35 mots sur les engagements/valeurs]",
+  "aboutCta": "Nous contacter",
+  "aboutEmoji": "[grand emoji représentatif]",
+  "menuTitle": "[titre de la section menu]",
+  "menuSub": "[phrase d'accroche sur la carte]",
+  "menuItems": [
+    {"category": "[catégorie1]", "name": "[nom plat]", "desc": "[description courte et appétissante]", "price": "[prix]"},
+    {"category": "[catégorie1]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie1]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie2]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie2]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie2]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie3]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"},
+    {"category": "[catégorie3]", "name": "[nom plat]", "desc": "[description]", "price": "[prix]"}
+  ],
+  "testiTitle": "[titre section avis clients]",
+  "testi1Text": "[avis client réaliste 20-30 mots]", "testi1Name": "[Prénom N.]", "testi1City": "[ville]",
+  "testi2Text": "[avis client réaliste 20-30 mots]", "testi2Name": "[Prénom N.]", "testi2City": "[ville]",
+  "testi3Text": "[avis client réaliste 20-30 mots]", "testi3Name": "[Prénom N.]", "testi3City": "[ville]",
+  "contactTitle": "[titre contact]",
+  "address": "${address || "Adresse à renseigner"}",
+  "phone": "${phone || "Téléphone à renseigner"}",
+  "email": "${email || "contact@restaurant.fr"}",
+  "hours": [
+    {"day": "Lundi", "time": "Fermé"},
+    {"day": "Mardi – Vendredi", "time": "12h–14h30, 19h–22h"},
+    {"day": "Samedi", "time": "12h–15h, 19h–23h"},
+    {"day": "Dimanche", "time": "12h–15h"}
+  ],
+  "formPlaceholder": "Votre message, demande de réservation...",
+  "formCta": "Envoyer",
+  "navCta": "Réserver",
+  "metaDesc": "[meta description SEO 150 chars]",
+  "year": "${year}"
+}
 
-═══════════════════════════════════
-DIRECTION ARTISTIQUE — ${styleLabel || "Moderne"}
-═══════════════════════════════════
-${currentStyleGuide}
+IMPORTANT: Si le menu est fourni par le client, utilise ces plats/prix réels dans menuItems. Adapte les catégories selon le type de restaurant.
+Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 
-═══════════════════════════════════
-STANDARDS DE QUALITÉ ABSOLUS
-═══════════════════════════════════
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 4000,
+      messages: [{ role: "user", content: prompt }],
+    });
 
-DESIGN :
-- Hero section avec accroche puissante, visuel impactant, CTA bien visible
-- Sections bien rythmées avec alternance de backgrounds pour aérer
-- Cards avec hover effects (transform, shadow, couleur)
-- Compteurs animés pour les chiffres clés (clients, années d'expérience, etc.)
-- Section témoignages clients avec avatars générés SVG
-- Section FAQ avec accordion animé
-- Footer complet avec plan du site, coordonnées, réseaux sociaux SVG
-- Favicon inline et meta tags SEO complets (title, description, og:)
+    let jsonStr = (message.content[0] as { type: string; text: string }).text.trim();
+    if (jsonStr.startsWith("```")) jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
 
-ANIMATIONS & INTERACTIONS :
-- IntersectionObserver pour fade-in/slide-up à chaque section au scroll
-- Parallax subtil sur le hero
-- Cursor hover effects sur les boutons (scale, glow)
-- Smooth scroll entre les sections
-- Menu hamburger mobile avec animation fluide (burger → croix)
-- Loading animation sur la page (spinner ou progress bar)
-- Texte hero animé (typing effect ou reveal progressif)
+    const content: RestaurantContent = JSON.parse(jsonStr);
+    return buildRestaurantHtml(content, theme, businessName);
 
-TECHNIQUE :
-- HTML5 sémantique parfait (header, main, section, article, footer, nav)
-- CSS custom properties (variables) pour toute la palette de couleurs
-- Flexbox et CSS Grid pour les layouts
-- Mobile-first, 100% responsive (breakpoints 480px, 768px, 1024px, 1280px)
-- Formulaire de contact avec validation JS en temps réel et feedback visuel
-- Images : si photos fournies → les intégrer avec object-fit:cover, sinon → placeholders SVG élaborés et thématiques adaptés au secteur
-- Google Fonts via CDN (2 fonts maximum, bien choisies pour le style)
-- Toutes les icônes en SVG inline (pas de dépendances externes)
-- Performance : CSS minifié dans <style>, JS en bas de page
+  } else {
+    const prompt = `Tu es un expert en copywriting et contenu web.
 
-CONTENU :
-- Rédige un VRAI contenu professionnel, accrocheur et adapté au secteur
-- Titre hero percutant (pas générique), sous-titre qui explique la valeur
-- Arguments de vente spécifiques au métier (pas du Lorem Ipsum)
-- Invente des chiffres crédibles (ex: 200+ clients, 10 ans d'expérience)
-- Invente 3 témoignages clients réalistes avec prénom, ville, note 5 étoiles
-- Invente une FAQ avec 4-5 questions pertinentes au secteur
+Génère uniquement un objet JSON valide (sans markdown, sans explication) pour un site web professionnel avec ces infos :
 
-PAGES DEMANDÉES : ${pages.map(p => `\n- ${p}`).join("")}
-Chaque page doit être une section complète avec son propre contenu élaboré.
+Nom: ${businessName}
+Type d'activité: ${businessType}
+Description: ${description}
+Slogan: ${slogan || ""}
+Adresse: ${address || "Non précisée"}
+Téléphone: ${phone || "Non précisé"}
+Email: ${email || "contact@" + businessName.toLowerCase().replace(/\s+/g, "") + ".fr"}
 
-═══════════════════════════════════
-FORMAT DE RÉPONSE
-═══════════════════════════════════
-Réponds UNIQUEMENT avec le code HTML complet et autosuffisant.
-Commence par <!DOCTYPE html> et termine par </html>.
-Tout le CSS dans <style> dans le <head>.
-Tout le JS dans <script> avant </body>.
-Aucune dépendance externe sauf Google Fonts.
-Aucune explication, aucun markdown, juste le code.`;
+Génère ce JSON exactement :
+{
+  "heroTag": "[type d'activité · ville ou région si connue]",
+  "heroTitle1": "[accroche principale 3-4 mots forts]",
+  "heroTitle2": "[2ème ligne du titre, en italique]",
+  "heroSub": "[phrase d'accroche 15-20 mots, professionnelle et convaincante]",
+  "heroCta1": "[CTA principal ex: Nos services, Prendre RDV]",
+  "heroCta2": "[CTA secondaire ex: Nous appeler, Devis gratuit]",
+  "heroEmoji": "[emoji représentatif du métier]",
+  "stat1Num": "[chiffre avec signe]", "stat1Label": "[métrique pertinente]",
+  "stat2Num": "[chiffre avec signe]", "stat2Label": "[métrique pertinente]",
+  "stat3Num": "[chiffre avec signe]", "stat3Label": "[métrique pertinente]",
+  "servicesTitle": "[titre section services]",
+  "servicesSub": "[phrase d'accroche sur les services]",
+  "services": [
+    {"emoji": "[emoji]", "title": "[service 1]", "desc": "[description 20-30 mots]"},
+    {"emoji": "[emoji]", "title": "[service 2]", "desc": "[description 20-30 mots]"},
+    {"emoji": "[emoji]", "title": "[service 3]", "desc": "[description 20-30 mots]"},
+    {"emoji": "[emoji]", "title": "[service 4]", "desc": "[description 20-30 mots]"}
+  ],
+  "aboutTag": "À propos",
+  "aboutTitle": "[titre de section]",
+  "aboutP1": "[paragraphe 30-40 mots sur l'histoire/expertise]",
+  "aboutP2": "[paragraphe 25-35 mots sur les valeurs/engagement]",
+  "aboutCta": "Nous contacter",
+  "faqTitle": "Questions fréquentes",
+  "faqs": [
+    {"q": "[question fréquente 1]", "a": "[réponse claire 20-30 mots]"},
+    {"q": "[question fréquente 2]", "a": "[réponse claire 20-30 mots]"},
+    {"q": "[question fréquente 3]", "a": "[réponse claire 20-30 mots]"},
+    {"q": "[question fréquente 4]", "a": "[réponse claire 20-30 mots]"}
+  ],
+  "testiTitle": "[titre section témoignages]",
+  "testi1Text": "[témoignage réaliste 20-30 mots]", "testi1Name": "[Prénom N.]", "testi1City": "[ville]",
+  "testi2Text": "[témoignage réaliste 20-30 mots]", "testi2Name": "[Prénom N.]", "testi2City": "[ville]",
+  "testi3Text": "[témoignage réaliste 20-30 mots]", "testi3Name": "[Prénom N.]", "testi3City": "[ville]",
+  "contactTitle": "[titre de la section contact]",
+  "address": "${address || "Adresse à renseigner"}",
+  "phone": "${phone || "Téléphone à renseigner"}",
+  "email": "${email || "contact@entreprise.fr"}",
+  "formPlaceholder": "[placeholder textarea adapté au métier]",
+  "formCta": "[texte du bouton envoi]",
+  "navCta": "[CTA navbar ex: Devis gratuit, Prendre RDV]",
+  "metaDesc": "[meta description SEO 150 chars]",
+  "year": "${year}"
+}
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 16000,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
+Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 
-  const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response type from Claude");
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 3000,
+      messages: [{ role: "user", content: prompt }],
+    });
 
-  // Clean up any markdown code blocks if present
-  let html = content.text;
-  if (html.startsWith("```html")) {
-    html = html.slice(7);
+    let jsonStr = (message.content[0] as { type: string; text: string }).text.trim();
+    if (jsonStr.startsWith("```")) jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+
+    const content: ServiceContent = JSON.parse(jsonStr);
+    return buildServiceHtml(content, theme, businessName);
   }
-  if (html.startsWith("```")) {
-    html = html.slice(3);
-  }
-  if (html.endsWith("```")) {
-    html = html.slice(0, -3);
-  }
-
-  return html.trim();
 }

@@ -1,9 +1,27 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+const reviews = [
+  { initial: "M", color: "#7c3aed", name: "Marie L.", city: "Lyon", text: "Site livré en 24h chrono, exactement ce que je voulais. Je recommande à 100% !", stars: 5 },
+  { initial: "S", color: "#3b82f6", name: "Sébastien R.", city: "Bordeaux", text: "Design très moderne et professionnel. Mes clients me complimentent sur mon site.", stars: 5 },
+  { initial: "L", color: "#ec4899", name: "Laure D.", city: "Paris", text: "Mes clients adorent le résultat ! Le site est rapide, beau et facile à utiliser.", stars: 5 },
+  { initial: "T", color: "#10b981", name: "Thomas B.", city: "Marseille", text: "Rapport qualité/prix imbattable. Pour 149€ j'ai un site que j'aurais payé 2000€ ailleurs.", stars: 5 },
+  { initial: "N", color: "#f97316", name: "Nadia K.", city: "Grenoble", text: "Très réactif et à l'écoute. Il a su comprendre exactement ce que je voulais.", stars: 5 },
+];
 
 export default function Hero() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setCurrent(i => (i + 1) % reviews.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+
+  const r = reviews[current];
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
       {/* Background orbs */}
@@ -75,20 +93,51 @@ export default function Hero() {
             <span className="text-xl">→</span>
           </Link>
 
-          {/* Avis clients */}
-          <div className="flex items-center gap-3 glass px-5 py-3 rounded-full border border-white/10">
-            <div className="flex -space-x-2">
-              {["M","S","L"].map((initial, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-xs font-bold text-white"
-                  style={{ background: ["#7c3aed","#3b82f6","#ec4899"][i] }}>
-                  {initial}
+          <div className="flex items-center gap-3 glass px-5 py-3 rounded-full border border-white/10 text-sm text-gray-400">
+            <span className="text-yellow-400">★★★★★</span>
+            <span><span className="text-white font-semibold">+12 clients</span> satisfaits</span>
+          </div>
+        </motion.div>
+
+        {/* Avis clients — grande section défilante */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.55 }}
+          className="mt-10 max-w-xl mx-auto"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.4 }}
+              className="glass rounded-2xl p-6 border border-white/10 text-left"
+            >
+              <div className="text-yellow-400 text-lg mb-3">★★★★★</div>
+              <p className="text-white text-base leading-relaxed mb-4">"{r.text}"</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                  style={{ background: r.color }}>
+                  {r.initial}
                 </div>
-              ))}
-            </div>
-            <div>
-              <div className="flex text-yellow-400 text-xs leading-none mb-0.5">★★★★★</div>
-              <div className="text-gray-400 text-xs">+12 clients satisfaits</div>
-            </div>
+                <div>
+                  <div className="text-white font-semibold text-sm">{r.name}</div>
+                  <div className="text-gray-500 text-xs">{r.city}</div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Points indicateurs */}
+          <div className="flex justify-center gap-2 mt-4">
+            {reviews.map((_, i) => (
+              <button key={i} onClick={() => setCurrent(i)}
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{ background: i === current ? "#a78bfa" : "rgba(255,255,255,0.15)", transform: i === current ? "scale(1.4)" : "scale(1)" }}
+              />
+            ))}
           </div>
         </motion.div>
 
@@ -117,64 +166,6 @@ export default function Hero() {
           ))}
         </motion.div>
 
-        {/* Floating mockup cards */}
-        <div className="mt-20 relative">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="relative max-w-3xl mx-auto"
-          >
-            {/* Browser mockup */}
-            <div className="glass rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              {/* Browser bar */}
-              <div className="bg-white/5 px-4 py-3 flex items-center gap-3 border-b border-white/5">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400/70" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400/70" />
-                  <div className="w-3 h-3 rounded-full bg-green-400/70" />
-                </div>
-                <div className="flex-1 bg-white/5 rounded-full px-4 py-1 text-xs text-gray-500 text-center">
-                  monbusiness.fr
-                </div>
-              </div>
-              {/* Fake website content */}
-              <div className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 min-h-48 flex flex-col items-center justify-center gap-4">
-                <div className="w-16 h-1 bg-purple-400/50 rounded" />
-                <div className="w-48 h-8 bg-white/10 rounded-lg shimmer" />
-                <div className="w-64 h-3 bg-white/5 rounded" />
-                <div className="w-56 h-3 bg-white/5 rounded" />
-                <div className="flex gap-3 mt-2">
-                  <div className="w-24 h-8 rounded-full bg-purple-500/40" />
-                  <div className="w-24 h-8 rounded-full bg-white/10" />
-                </div>
-              </div>
-            </div>
-
-            {/* Floating badges around the mockup */}
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute -left-8 top-1/3 glass px-3 py-2 rounded-xl text-xs font-semibold text-green-400 border border-green-400/20 hidden md:block"
-            >
-              ✓ Responsive mobile
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 3.5, repeat: Infinity }}
-              className="absolute -right-8 top-1/4 glass px-3 py-2 rounded-xl text-xs font-semibold text-blue-400 border border-blue-400/20 hidden md:block"
-            >
-              ⚡ Ultra rapide
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute -right-4 bottom-1/4 glass px-3 py-2 rounded-xl text-xs font-semibold text-purple-400 border border-purple-400/20 hidden md:block"
-            >
-              🎨 Design premium
-            </motion.div>
-          </motion.div>
-        </div>
       </div>
     </section>
   );

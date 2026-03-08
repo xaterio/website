@@ -87,10 +87,10 @@ export default function QuizStep6({ data, onChange, onSubmit, loading }: Props) 
                 <span className="text-white">{data.businessName}</span>
               </div>
             )}
-            {data.photos && data.photos.length > 0 && (
+            {data.menuText && (
               <div className="flex justify-between">
-                <span className="text-gray-500">Photos</span>
-                <span className="text-white">{data.photos.length} photo(s)</span>
+                <span className="text-gray-500">Menu</span>
+                <span className="text-white">✓ Fourni</span>
               </div>
             )}
           </div>

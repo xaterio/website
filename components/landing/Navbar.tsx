@@ -21,9 +21,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <span className="font-bold text-white text-lg">
-            Alexandre<span className="gradient-text">Dev</span>
-          </span>
+          <div className="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center text-white font-black text-sm">A</div>
         </Link>
 
         {/* Links */}
