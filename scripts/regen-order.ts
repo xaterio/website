@@ -1,5 +1,6 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
+// dotenv doit être chargé avant tout import qui utilise process.env
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+require("dotenv").config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { generateWebsite } from "../lib/claude";
