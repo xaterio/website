@@ -5,5 +5,5 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-export const PRICE = 100; // 1€ in cents (TEST)
+export const PRICE = 14900; // 149€ in cents
 export const CURRENCY = "eur";
