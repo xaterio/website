@@ -87,7 +87,7 @@ Effectue UNIQUEMENT la modification demandée par le client, sans changer le res
 Conserve tout le design, les couleurs, les animations et la structure existante.
 Réponds UNIQUEMENT avec le code HTML complet modifié, sans aucune explication ni markdown.`;
 
-    let newHtml = await callClaudeRaw(prompt, 6000);
+    let newHtml = await callClaudeRaw(prompt, 8192);
     if (newHtml.startsWith("```html")) newHtml = newHtml.slice(7);
     if (newHtml.startsWith("```")) newHtml = newHtml.slice(3);
     if (newHtml.endsWith("```")) newHtml = newHtml.slice(0, -3);
