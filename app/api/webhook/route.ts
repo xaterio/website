@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { stripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateWebsite } from "@/lib/claude";
@@ -46,8 +47,8 @@ export async function POST(req: NextRequest) {
     // Update status to paid
     await supabase.from("orders").update({ status: "paid" }).eq("id", orderId);
 
-    // Generate site asynchronously (don't await to avoid timeout)
-    generateSiteAndDeliver(orderId, order, supabase).catch(console.error);
+    // Use waitUntil to keep the function alive during async generation
+    waitUntil(generateSiteAndDeliver(orderId, order, supabase));
   }
 
   return NextResponse.json({ received: true });
