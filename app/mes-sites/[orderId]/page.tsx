@@ -13,7 +13,8 @@ interface Message {
 
 function RevisionChat({ orderId }: { orderId: string }) {
   const params = useSearchParams();
-  const email = params.get("email") || "";
+  const [email, setEmail] = useState(params.get("email") || "");
+  const [emailConfirmed, setEmailConfirmed] = useState(!!params.get("email"));
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -66,6 +67,31 @@ function RevisionChat({ orderId }: { orderId: string }) {
       setLoading(false);
     }
   };
+
+  if (!emailConfirmed) {
+    return (
+      <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
+        <div className="glass rounded-3xl p-8 max-w-sm w-full">
+          <h2 className="text-white font-black text-xl mb-2">Confirmer votre email</h2>
+          <p className="text-gray-400 text-sm mb-6">Entrez l&apos;email utilisé lors de votre commande.</p>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setEmailConfirmed(true); }}
+            placeholder="votre@email.com"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors text-sm mb-4"
+          />
+          <button
+            onClick={() => email.trim() && setEmailConfirmed(true)}
+            className="w-full btn-gradient px-5 py-3 rounded-xl text-white font-bold text-sm"
+          >
+            Continuer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen gradient-mesh flex flex-col py-6 px-4">
