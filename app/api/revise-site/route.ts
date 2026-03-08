@@ -22,6 +22,7 @@ async function callClaudeRaw(prompt: string, maxTokens: number): Promise<string>
 }
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
