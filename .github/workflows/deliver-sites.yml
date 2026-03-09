@@ -1,0 +1,16 @@
+name: Deliver Sites (2h delay)
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger delivery cron
+        run: |
+          curl -s -f -X GET "${{ secrets.SITE_URL }}/api/cron/deliver" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            | cat
