@@ -84,7 +84,7 @@ export async function sendProspectionEmail({
   companyName: string;
   directorName?: string;
 }) {
-  const greeting = directorName ? `Bonjour ${directorName}` : "Bonjour";
+  const greeting = "Bonjour";
 
   return resend.emails.send({
     from: "Alexandre <contact@alexwebdesign.pro>",

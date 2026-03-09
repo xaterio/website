@@ -9,7 +9,9 @@
     "lint": "eslint",
     "prospect": "ts-node --project tsconfig.scripts.json scripts/prospector/index.ts",
     "prospect:test": "ts-node --project tsconfig.scripts.json scripts/prospector/index.ts --test",
-    "test:gen": "node scripts/test-gen.mjs"
+    "test:gen": "node scripts/test-gen.mjs",
+    "prospect:maps": "node scripts/prospector/google-places.mjs",
+    "prospect:maps:dry": "node scripts/prospector/google-places.mjs --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.38.0",
