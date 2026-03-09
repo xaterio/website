@@ -146,11 +146,16 @@ Génère uniquement un objet JSON valide (sans markdown, sans explication) pour 
 
 Nom: ${businessName}
 Type d'activité: ${businessType}
-Description: ${description}
+Description fournie par le client: ${description || "Non fournie"}
 Slogan: ${slogan || ""}
 Adresse: ${address || "Non précisée"}
 Téléphone: ${phone || "Non précisé"}
 Email: ${email || "contact@" + businessName.toLowerCase().replace(/\s+/g, "") + ".fr"}
+${freeDescription ? `Description libre du client: ${freeDescription}` : ""}
+${customWants ? `Ce que le client veut absolument inclure: ${customWants}` : ""}
+${customDontWants ? `Ce que le client ne veut PAS: ${customDontWants}` : ""}
+
+⚠️ RÈGLE ABSOLUE POUR LES SERVICES : Tu dois UNIQUEMENT lister les services que le client a explicitement mentionnés dans sa description ou ses instructions. N'invente JAMAIS un service qui n'est pas mentionné. Si le client dit "salon de beauté" sans mentionner la coiffure, n'inclus PAS la coiffure. Base-toi UNIQUEMENT sur ce que le client a écrit.
 
 Génère ce JSON exactement :
 {
@@ -166,19 +171,19 @@ Génère ce JSON exactement :
   "servicesTitle": "[titre section services]",
   "servicesSub": "[phrase d'accroche sur les services]",
   "services": [
-    {"emoji": "[emoji]", "title": "[service 1]", "desc": "[description 20-30 mots]"},
-    {"emoji": "[emoji]", "title": "[service 2]", "desc": "[description 20-30 mots]"},
-    {"emoji": "[emoji]", "title": "[service 3]", "desc": "[description 20-30 mots]"},
-    {"emoji": "[emoji]", "title": "[service 4]", "desc": "[description 20-30 mots]"}
+    {"emoji": "[emoji]", "title": "[service MENTIONNÉ par le client]", "desc": "[description 20-30 mots fidèle à ce que le client a décrit]"},
+    {"emoji": "[emoji]", "title": "[service MENTIONNÉ par le client]", "desc": "[description 20-30 mots]"},
+    {"emoji": "[emoji]", "title": "[service MENTIONNÉ par le client]", "desc": "[description 20-30 mots]"},
+    {"emoji": "[emoji]", "title": "[service MENTIONNÉ par le client]", "desc": "[description 20-30 mots]"}
   ],
   "aboutTag": "À propos",
   "aboutTitle": "[titre de section]",
-  "aboutP1": "[paragraphe 30-40 mots sur l'histoire/expertise]",
+  "aboutP1": "[paragraphe 30-40 mots sur l'histoire/expertise, basé sur la description du client]",
   "aboutP2": "[paragraphe 25-35 mots sur les valeurs/engagement]",
   "aboutCta": "Nous contacter",
   "faqTitle": "Questions fréquentes",
   "faqs": [
-    {"q": "[question fréquente 1]", "a": "[réponse claire 20-30 mots]"},
+    {"q": "[question fréquente pertinente pour CE métier spécifique]", "a": "[réponse claire 20-30 mots]"},
     {"q": "[question fréquente 2]", "a": "[réponse claire 20-30 mots]"},
     {"q": "[question fréquente 3]", "a": "[réponse claire 20-30 mots]"},
     {"q": "[question fréquente 4]", "a": "[réponse claire 20-30 mots]"}
@@ -198,7 +203,7 @@ Génère ce JSON exactement :
   "year": "${year}"
 }
 
-${testiInstructions}${customInstructions}
+${testiInstructions}
 
 Réponds UNIQUEMENT avec le JSON valide, aucun texte avant ou après.`;
 
