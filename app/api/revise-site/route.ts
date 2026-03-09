@@ -75,23 +75,45 @@ async function reviseSiteAndDeliver(
     const businessName = (order.business_name as string) || "Votre entreprise";
     const clientName = (order.client_name as string) || "Client";
 
-    const prompt = `Tu es un expert développeur web. Voici le code HTML complet d'un site web existant.
+    const prompt = `Tu es un expert développeur web qui révise un site web pour un client.
 
 Le client demande la modification suivante :
 "${revisionRequest}"
 
-Voici le code HTML actuel du site :
-${currentHtml}
+MODIFICATIONS POSSIBLES (que tu peux faire) :
+- Modifier des textes, titres, descriptions, coordonnées
+- Changer les couleurs, polices, styles visuels
+- Ajouter ou supprimer des sections, photos, boutons
+- Modifier la mise en page et la structure
 
-Effectue UNIQUEMENT la modification demandée par le client, sans changer le reste du site.
+MODIFICATIONS IMPOSSIBLES (que tu ne peux PAS faire) :
+- Changer l'URL/adresse du site web (c'est géré par l'hébergeur, pas dans le HTML)
+- Connecter un nom de domaine personnalisé
+- Modifier la base de données ou le backend
+- Intégrer des systèmes de paiement ou de réservation tiers
+
+Si le client demande quelque chose d'impossible, réponds UNIQUEMENT avec ce message exact (sans HTML) :
+"IMPOSSIBLE:[raison courte et claire en français]"
+
+Sinon, effectue UNIQUEMENT la modification demandée sans changer le reste.
 Conserve tout le design, les couleurs, les animations et la structure existante.
-Réponds UNIQUEMENT avec le code HTML complet modifié, sans aucune explication ni markdown.`;
+Réponds UNIQUEMENT avec le code HTML complet modifié, sans aucune explication ni markdown.
+
+Voici le code HTML actuel du site :
+${currentHtml}`;
 
     let newHtml = await callClaudeRaw(prompt, 8192);
     if (newHtml.startsWith("```html")) newHtml = newHtml.slice(7);
     if (newHtml.startsWith("```")) newHtml = newHtml.slice(3);
     if (newHtml.endsWith("```")) newHtml = newHtml.slice(0, -3);
     newHtml = newHtml.trim();
+
+    // Claude a détecté une demande impossible
+    if (newHtml.startsWith("IMPOSSIBLE:")) {
+      const reason = newHtml.slice("IMPOSSIBLE:".length).trim();
+      await supabase.from("orders").update({ status: "delivered" }).eq("id", orderId);
+      throw new Error(`Modification impossible : ${reason}`);
+    }
 
     // Sauvegarder le nouveau HTML
     await supabase

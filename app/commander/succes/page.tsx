@@ -63,6 +63,7 @@ function SuccessContent() {
               { icon: "🤖", text: "Notre IA analyse vos informations et génère votre site", time: "En cours" },
               { icon: "✉️", text: "Vous recevrez un email avec le lien de prévisualisation", time: "< 48h" },
               { icon: "🚀", text: "Une fois validé, votre site est mis en ligne", time: "Sur demande" },
+              { icon: "✏️", text: "Pour demander des modifications, connectez-vous en haut à droite → \"Mes sites\"", time: "À tout moment" },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <span className="text-xl mt-0.5">{item.icon}</span>
