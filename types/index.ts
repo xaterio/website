@@ -37,6 +37,7 @@ export interface OrderData {
   pages?: PageType[];
   // Étape 4
   businessName?: string;
+  foundedYear?: string;
   slogan?: string;
   description?: string;
   address?: string;

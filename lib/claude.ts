@@ -46,6 +46,7 @@ export async function generateWebsite(
     phone = "",
     email = "",
     menuText = "",
+    foundedYear = "",
     testimonials,
     customWants = "",
     customDontWants = "",
@@ -72,6 +73,7 @@ export async function generateWebsite(
 Génère uniquement un objet JSON valide (sans markdown, sans explication) pour un site de restaurant avec ces infos :
 
 Nom: ${businessName}
+Année de création: ${foundedYear || "Non précisée — NE PAS inventer une année ni des années d'expérience"}
 Description: ${description}
 Slogan: ${slogan || ""}
 Adresse: ${address || "Non précisée"}
@@ -146,6 +148,7 @@ Génère uniquement un objet JSON valide (sans markdown, sans explication) pour 
 
 Nom: ${businessName}
 Type d'activité: ${businessType}
+Année de création: ${foundedYear || "Non précisée — NE PAS inventer une année ni des années d'expérience"}
 Description fournie par le client: ${description || "Non fournie"}
 Slogan: ${slogan || ""}
 Adresse: ${address || "Non précisée"}
@@ -155,6 +158,7 @@ ${freeDescription ? `Description libre du client: ${freeDescription}` : ""}
 ${customWants ? `Ce que le client veut absolument inclure: ${customWants}` : ""}
 ${customDontWants ? `Ce que le client ne veut PAS: ${customDontWants}` : ""}
 
+⚠️ RÈGLE ABSOLUE POUR LES STATS : Si l'année de création n'est pas précisée, n'invente PAS "X ans d'expérience". Utilise à la place des métriques vérifiables comme le nombre de services proposés, la zone d'intervention, ou la satisfaction client.
 ⚠️ RÈGLE ABSOLUE POUR LES SERVICES : Tu dois UNIQUEMENT lister les services que le client a explicitement mentionnés dans sa description ou ses instructions. N'invente JAMAIS un service qui n'est pas mentionné. Si le client dit "salon de beauté" sans mentionner la coiffure, n'inclus PAS la coiffure. Base-toi UNIQUEMENT sur ce que le client a écrit.
 
 Génère ce JSON exactement :

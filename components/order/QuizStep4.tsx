@@ -10,6 +10,7 @@ interface Props {
 
 const fields = [
   { key: "businessName", label: "Nom de votre entreprise *", placeholder: "Ex: Bistrot Le Soleil", required: true },
+  { key: "foundedYear", label: "Année de création de l'entreprise", placeholder: "Ex: 2018", required: false },
   { key: "slogan", label: "Slogan ou accroche", placeholder: "Ex: La tradition au cœur de votre assiette", required: false },
   { key: "description", label: "Description de votre activité *", placeholder: "Décrivez ce que vous faites, vos spécialités, ce qui vous rend unique...", required: true, multiline: true },
   { key: "address", label: "Adresse", placeholder: "Ex: 12 rue des Fleurs, 69001 Lyon", required: false },
