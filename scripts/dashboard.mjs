@@ -345,10 +345,9 @@ async function runProspection(ville, max, dry, res) {
   <li>si le site ne vous plaît pas, vous pouvez être entièrement remboursé ;</li>
   <li>pendant 1 mois après la livraison, je peux effectuer toutes les modifications nécessaires afin que le site corresponde parfaitement à vos attentes.</li>
 </ul>
-<p>Si cela vous intéresse, ou simplement si vous souhaitez voir ce que je suis capable de réaliser, je vous invite à consulter mon site web : <a href="${SITE_URL}">${SITE_URL}</a></p>
+<p>Si cela vous intéresse, ou simplement si vous souhaitez voir ce que je suis capable de réaliser, je vous invite à consulter mon site web :<br>${SITE_URL}</p>
 <p>Je serais ravi d'échanger avec vous si vous avez des questions.</p>
-<p>Cordialement,</p>
-<div class="signature"><strong>Alexandre</strong><br>contact@alexwebdesign.pro</div>
+<p>Cordialement,<br><strong>Alexandre</strong></p>
 </body></html>`,
                 });
                 saveContacted(place.place_id, place.name, email, currentVille);
