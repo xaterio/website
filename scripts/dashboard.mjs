@@ -25,9 +25,34 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://website-three-zeta
 const { Resend } = await import("resend");
 const resend = new Resend(RESEND_API_KEY);
 
-const BLACKLISTED = ["pagesjaunes","solocal","societe.com","pappers","google","duckduckgo","example","test","w3.org","sentry","facebook","twitter","instagram","linkedin","apple","microsoft","amazon","cloudflare","vercel","supabase","stripe","resend","infogreffe","sirene","noreply","no-reply","donotreply"];
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+async function sendSms(to, message) {
+  // Normaliser le numéro en +33
+  let phone = to.replace(/\s/g, "");
+  if (phone.startsWith("0")) phone = "+33" + phone.slice(1);
+  if (!phone.startsWith("+")) return null;
+
+  const res = await fetch("https://api.brevo.com/v3/transactionalSMS/sms", {
+    method: "POST",
+    headers: {
+      "api-key": BREVO_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ sender: "Alexandre", recipient: phone, content: message }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Brevo: ${data.message || res.status}`);
+  return data.messageId;
+}
+
+const BLACKLISTED = ["pagesjaunes","solocal","societe.com","pappers","google","duckduckgo","example","test","w3.org","sentry","facebook","twitter","instagram","linkedin","apple","microsoft","amazon","cloudflare","vercel","supabase","stripe","resend","infogreffe","sirene","noreply","no-reply","donotreply","mairie","gouv","laposte","orange","sfr","free.fr","wanadoo","hotmail","gmail","yahoo","outlook"];
 const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-const HEADERS = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", Accept: "text/html,application/xhtml+xml,*/*;q=0.8", "Accept-Language": "fr-FR,fr;q=0.9" };
+const UA_LIST = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+];
 const BUSINESS_TYPES = [
   { type: "restaurant", label: "Restaurant" },
   { type: "beauty_salon", label: "Salon de beauté" },
@@ -37,27 +62,74 @@ const BUSINESS_TYPES = [
   { type: "bakery", label: "Boulangerie" },
   { type: "dentist", label: "Dentiste" },
   { type: "painter", label: "Peintre" },
+  { type: "car_repair", label: "Garage auto" },
+  { type: "florist", label: "Fleuriste" },
+  { type: "physiotherapist", label: "Kinésithérapeute" },
+  { type: "veterinary_care", label: "Vétérinaire" },
+  { type: "laundry", label: "Pressing" },
+  { type: "locksmith", label: "Serrurier" },
+  { type: "moving_company", label: "Déménageur" },
 ];
 
 const CONTACTED_FILE = path.join(__dirname, "prospector/contacted.csv");
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function randUA() { return UA_LIST[Math.floor(Math.random() * UA_LIST.length)]; }
 function extractEmails(html) {
-  return (html.match(EMAIL_REGEX) || []).map(e => e.toLowerCase()).filter(e => !BLACKLISTED.some(b => e.includes(b)) && e.length < 80);
+  return (html.match(EMAIL_REGEX) || []).map(e => e.toLowerCase()).filter(e => !BLACKLISTED.some(b => e.includes(b)) && e.length < 80 && e.includes("."));
 }
 async function fetchPage(url) {
   try {
-    const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(6000) });
+    const res = await fetch(url, {
+      headers: { "User-Agent": randUA(), Accept: "text/html,*/*;q=0.8", "Accept-Language": "fr-FR,fr;q=0.9", "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(7000)
+    });
     if (!res.ok) return null;
     return await res.text();
   } catch { return null; }
 }
-async function guessEmail(name, ville) {
+
+// Normalise le nom pour deviner un domaine
+function nameToDomain(name) {
+  return name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 20);
+}
+
+async function guessEmail(name, ville, phone) {
+  const q = encodeURIComponent(`"${name}" ${ville}`);
+
+  // Source 1 : Pages Jaunes
   const pj = await fetchPage(`https://www.pagesjaunes.fr/pagesblanches/recherche?quoi=${encodeURIComponent(`${name} ${ville}`.trim())}&ou=France`);
   if (pj) { const e = extractEmails(pj)[0]; if (e) return e; }
-  const ddg = await fetchPage(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`"${name}" ${ville} email contact`)}&kl=fr-fr`);
+  await sleep(300);
+
+  // Source 2 : Bing
+  const bing = await fetchPage(`https://www.bing.com/search?q=${q}+email+contact&setlang=fr&cc=FR`);
+  if (bing) { const e = extractEmails(bing)[0]; if (e) return e; }
+  await sleep(300);
+
+  // Source 3 : DuckDuckGo
+  const ddg = await fetchPage(`https://html.duckduckgo.com/html/?q=${q}+%40+contact&kl=fr-fr`);
   if (ddg) { const e = extractEmails(ddg)[0]; if (e) return e; }
+  await sleep(300);
+
+  // Source 4 : Societe.com
+  const soc = await fetchPage(`https://www.societe.com/cgi-bin/search?champs=${encodeURIComponent(`${name} ${ville}`.trim())}`);
+  if (soc) { const e = extractEmails(soc)[0]; if (e) return e; }
+
   return null;
+}
+
+// Vérifie si le domaine d'un email a un site web actif (auquel cas le business a déjà un site)
+async function emailDomainHasSite(email) {
+  const domain = email.split("@")[1];
+  if (!domain) return false;
+  try {
+    const r = await fetch(`https://${domain}`, { method: "HEAD", signal: AbortSignal.timeout(3000), redirect: "follow" });
+    return r.ok || r.status === 403 || r.status === 200;
+  } catch { return false; }
 }
 async function searchPlaces(query, pageToken) {
   const params = new URLSearchParams({ query, key: API_KEY, language: "fr", region: "fr", ...(pageToken && { pagetoken: pageToken }) });
@@ -143,7 +215,9 @@ let sent = 0, nosite = 0, noemail = 0;
 
 function log(html) {
   const el = document.getElementById("log");
-  el.innerHTML += html + "\\n";
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  el.appendChild(div);
   el.scrollTop = el.scrollHeight;
 }
 
@@ -169,16 +243,20 @@ function start() {
 
   es.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === "search") log('<span class="l-search">🔍 Recherche ' + d.label + ' à ' + d.ville + '...</span>');
+    if (d.type === "city") log('<span style="color:#a78bfa;font-weight:bold;margin-top:8px;display:block">📍 Ville : ' + d.ville + '</span>');
+    else if (d.type === "search") log('<span class="l-search">🔍 Recherche ' + d.label + ' à ' + d.ville + '...</span>');
     else if (d.type === "skip_site") log('<span class="l-skip">⏭  ' + d.name + ' — a un site</span>');
     else if (d.type === "no_site") { nosite++; document.getElementById("s-nosite").textContent = nosite; log('<span class="l-nosite">📍 ' + d.name + ' — pas de site web</span>'); }
     else if (d.type === "no_email") { noemail++; document.getElementById("s-noemail").textContent = noemail; log('<span class="l-noemail">📭 ' + d.name + ' — email introuvable' + (d.phone ? ' · 📞 ' + d.phone : '') + '</span>'); }
     else if (d.type === "sending") log('<span class="l-sending">📤 ' + d.name + ' → ' + d.email + '...</span>');
     else if (d.type === "sent") { sent++; document.getElementById("s-sent").textContent = sent; log('<span class="l-sent">✅ ' + d.name + ' (' + d.email + ')</span>'); }
     else if (d.type === "dry") { sent++; document.getElementById("s-sent").textContent = sent; log('<span class="l-sent">[DRY] ' + d.name + ' → ' + d.email + '</span>'); }
+    else if (d.type === "sending_sms") log('<span class="l-sending">💬 ' + d.name + ' → SMS ' + d.phone + '...</span>');
+    else if (d.type === "sent_sms") { sent++; document.getElementById("s-sent").textContent = sent; log('<span class="l-sent">✅ ' + d.name + ' — SMS envoyé (' + d.phone + ')</span>'); }
+    else if (d.type === "dry_sms") { sent++; document.getElementById("s-sent").textContent = sent; log('<span class="l-sent">[DRY SMS] ' + d.name + ' → ' + d.phone + '</span>'); }
     else if (d.type === "error") log('<span class="l-error">❌ ' + d.message + '</span>');
     else if (d.type === "done") {
-      log('<span class="l-done">✅ Terminé — ' + d.sent + ' email(s) envoyé(s)</span>');
+      log('<span class="l-done">✅ Terminé — ' + d.sent + ' contact(s) envoyé(s)</span>');
       btn.disabled = false;
       btn.textContent = "🚀 Lancer la prospection";
       es.close();
@@ -196,67 +274,120 @@ async function runProspection(ville, max, dry, res) {
   const contacted = loadContacted();
   let sent = 0, noSite = 0, noEmail = 0;
 
-  for (const biz of BUSINESS_TYPES) {
+  // Villes à prospecter en cascade si la première est épuisée
+  const VILLES = [ville, "Grenoble", "Lyon", "Marseille", "Toulouse", "Nantes", "Bordeaux", "Lille", "Strasbourg", "Rennes", "Montpellier", "Nice", "Annecy", "Chambéry", "Valence", "Clermont-Ferrand", "Dijon", "Caen", "Reims", "Tours"].filter((v, i, a) => a.indexOf(v) === i);
+
+  outer:
+  for (const currentVille of VILLES) {
     if (sent >= max) break;
-    send({ type: "search", label: biz.label, ville });
+    send({ type: "city", ville: currentVille });
 
-    const data = await searchPlaces(`${biz.label} ${ville}`);
-    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-      send({ type: "error", message: `Erreur Google: ${data.status}` });
-      continue;
-    }
+    for (const biz of BUSINESS_TYPES) {
+      if (sent >= max) break outer;
+      send({ type: "search", label: biz.label, ville: currentVille });
 
-    for (const place of (data.results || [])) {
-      if (sent >= max) break;
-      if (contacted.has(place.place_id)) continue;
+      let pageToken = null;
+      let page = 0;
 
-      const details = await getPlaceDetails(place.place_id);
-      await sleep(100);
-
-      if (details?.website) { send({ type: "skip_site", name: place.name }); continue; }
-
-      noSite++;
-      send({ type: "no_site", name: place.name });
-
-      const email = await guessEmail(place.name, ville);
-      if (!email) {
-        noEmail++;
-        send({ type: "no_email", name: place.name, phone: details?.formatted_phone_number || null });
-        continue;
-      }
-
-      send({ type: "sending", name: place.name, email });
-
-      if (!dry) {
-        try {
-          await resend.emails.send({
-            from: "Alexandre <contact@alexwebdesign.pro>",
-            to: email,
-            subject: `Un site web professionnel pour ${place.name} ?`,
-            html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:40px auto;color:#1f2937;line-height:1.7}.signature{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}a{color:#7c3aed}</style></head><body>
-<p>Bonjour,</p>
-<p>Je me permets de vous contacter car j'ai remarqué que <strong>${place.name}</strong> n'a pas encore de site web, et je pense que vous méritez une belle vitrine en ligne.</p>
-<p>Je m'appelle <strong>Alexandre</strong>, j'ai 16 ans et je suis passionné d'informatique depuis tout petit. Pour gagner en expérience, je propose de créer votre site web professionnel pour seulement <strong>149€</strong> — un tarif que vous ne trouverez nulle part ailleurs pour la qualité proposée.</p>
-<p>Ce que vous obtenez :</p>
-<ul><li>✓ Un site web professionnel sur mesure</li><li>✓ Design moderne et responsive (mobile + tablette)</li><li>✓ Formulaire de contact, galerie photos, infos entreprise</li><li>✓ Livraison en 48 heures</li><li>✓ Satisfait ou remboursé</li></ul>
-<p>Voir mes réalisations : <a href="${SITE_URL}">${SITE_URL}</a></p>
-<p>Répondez à cet email ou commandez directement en ligne.</p>
-<div class="signature"><strong>Alexandre</strong><br>Développeur Web · 16 ans<br>contact@alexwebdesign.pro<br><a href="${SITE_URL}">${SITE_URL}</a></div>
-</body></html>`,
-          });
-          saveContacted(place.place_id, place.name, email, ville);
-          contacted.add(place.place_id);
-          sent++;
-          send({ type: "sent", name: place.name, email });
-        } catch (err) {
-          send({ type: "error", message: `Erreur envoi: ${err}` });
+      do {
+        if (pageToken) await sleep(2000);
+        const data = await searchPlaces(`${biz.label} ${currentVille}`, pageToken);
+        if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+          send({ type: "error", message: `Erreur Google: ${data.status}` });
+          break;
         }
-      } else {
-        sent++;
-        send({ type: "dry", name: place.name, email });
-      }
 
-      await sleep(500);
+        for (const place of (data.results || [])) {
+          if (sent >= max) break outer;
+          if (contacted.has(place.place_id)) continue;
+
+          const details = await getPlaceDetails(place.place_id);
+          await sleep(100);
+
+          if (details?.website) { send({ type: "skip_site", name: place.name }); continue; }
+
+          noSite++;
+          send({ type: "no_site", name: place.name });
+
+          const phone = details?.formatted_phone_number || null;
+          const email = await guessEmail(place.name, currentVille, phone);
+
+          // Email trouvé → vérifier que le domaine n'a pas de site
+          if (email && await emailDomainHasSite(email)) {
+            send({ type: "skip_site", name: place.name });
+            continue;
+          }
+
+          // Ni email ni téléphone → impossible de contacter
+          if (!email && !phone) {
+            noEmail++;
+            send({ type: "no_email", name: place.name, phone: null });
+            continue;
+          }
+
+          if (email) {
+            // Contacter par email
+            send({ type: "sending", name: place.name, email });
+            if (!dry) {
+              try {
+                await resend.emails.send({
+                  from: "Alexandre <contact@alexwebdesign.pro>",
+                  to: email,
+                  subject: `Un site web professionnel pour ${place.name} ?`,
+                  html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:40px auto;color:#1f2937;line-height:1.7}.signature{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}a{color:#7c3aed}</style></head><body>
+<p>Bonjour,</p>
+<p>Je me présente : je m'appelle <strong>Alexandre</strong>, j'ai 16 ans et je suis passionné d'informatique, notamment de développement web.</p>
+<p>En me renseignant sur votre entreprise <strong>${place.name}</strong>, j'ai remarqué que vous ne disposez pas encore de site internet. Aujourd'hui, avoir une présence en ligne peut vraiment aider une entreprise à gagner en visibilité et à attirer de nouveaux clients.</p>
+<p>Je vous propose donc mes services pour créer un site web moderne, professionnel et adapté à votre activité.</p>
+<p>Pour <strong>150€</strong>, je réalise un site web de qualité avec un excellent rapport qualité-prix, conçu pour présenter votre entreprise de manière claire et professionnelle.</p>
+<p>De plus, pour vous garantir une totale satisfaction :</p>
+<ul>
+  <li>si le site ne vous plaît pas, vous pouvez être entièrement remboursé ;</li>
+  <li>pendant 1 mois après la livraison, je peux effectuer toutes les modifications nécessaires afin que le site corresponde parfaitement à vos attentes.</li>
+</ul>
+<p>Si cela vous intéresse, ou simplement si vous souhaitez voir ce que je suis capable de réaliser, je vous invite à consulter mon site web : <a href="${SITE_URL}">${SITE_URL}</a></p>
+<p>Je serais ravi d'échanger avec vous si vous avez des questions.</p>
+<p>Cordialement,</p>
+<div class="signature"><strong>Alexandre</strong><br>contact@alexwebdesign.pro</div>
+</body></html>`,
+                });
+                saveContacted(place.place_id, place.name, email, currentVille);
+                contacted.add(place.place_id);
+                sent++;
+                send({ type: "sent", name: place.name, email });
+              } catch (err) {
+                send({ type: "error", message: `Erreur email: ${err.message}` });
+              }
+            } else {
+              sent++;
+              send({ type: "dry", name: place.name, email });
+            }
+          } else {
+            // Pas d'email → SMS via Brevo
+            send({ type: "sending_sms", name: place.name, phone });
+            if (!dry) {
+              try {
+                const smsText = `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne d'informatique. J'ai remarque que vous n'avez pas de site web. Je vous propose de vous en creer un. Visitez mon site pour voir mes realisations et commander : ${SITE_URL}`;
+                await sendSms(phone, smsText);
+                saveContacted(place.place_id, place.name, phone, currentVille);
+                contacted.add(place.place_id);
+                sent++;
+                send({ type: "sent_sms", name: place.name, phone });
+              } catch (err) {
+                send({ type: "error", message: `Erreur SMS: ${err.message}` });
+              }
+            } else {
+              sent++;
+              send({ type: "dry_sms", name: place.name, phone });
+            }
+          }
+
+          await sleep(500);
+        }
+
+        pageToken = data.next_page_token;
+        page++;
+      } while (pageToken && sent < max && page < 3);
     }
   }
 
