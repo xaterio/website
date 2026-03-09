@@ -13,14 +13,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alexandre Dev – Votre site web professionnel",
+  title: "Alexandre Dev – Création de site web par IA | Livraison 48h",
   description:
-    "Alexandre, 16 ans, passionné d'informatique, crée votre site web sur mesure avec l'IA. Résultat professionnel, livraison rapide, prix imbattable.",
-  keywords: ["site web", "création site", "développeur web", "IA", "professionnel"],
+    "Créez votre site web professionnel en 48h grâce à l'IA. Alexandre, développeur web, conçoit votre site sur mesure à partir de 149€. Restaurant, artisan, commerce : résultat professionnel garanti.",
+  keywords: [
+    "création site web", "site web professionnel", "développeur web", "site web pas cher",
+    "site web restaurant", "site web artisan", "site web IA", "création site internet",
+    "alexwebdesign", "alex web design", "site web 48h", "site web rapide",
+  ],
+  metadataBase: new URL("https://www.alexwebdesign.pro"),
+  alternates: {
+    canonical: "https://www.alexwebdesign.pro",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
   openGraph: {
-    title: "Alexandre Dev – Votre site web professionnel",
-    description: "Site web sur mesure créé par IA en 24h. Commandez maintenant.",
+    title: "Alexandre Dev – Création de site web par IA | Livraison 48h",
+    description: "Site web professionnel créé par IA en 48h à partir de 149€. Restaurant, artisan, commerce. Commandez maintenant.",
     type: "website",
+    url: "https://www.alexwebdesign.pro",
+    siteName: "Alexandre Dev",
+    locale: "fr_FR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Alexandre Dev – Site web par IA en 48h",
+    description: "Votre site web professionnel créé par IA en 48h à partir de 149€.",
   },
 };
 
