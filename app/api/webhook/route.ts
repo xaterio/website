@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateWebsite } from "@/lib/claude";
-import { sendDeliveryEmail } from "@/lib/resend";
+
 import Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -89,19 +89,11 @@ async function generateSiteAndDeliver(
     // Save generated HTML to DB
     await supabase
       .from("orders")
-      .update({ status: "delivered", site_html: siteHtml })
+      .update({ status: "generated", site_html: siteHtml })
       .eq("id", orderId);
 
-    // Send delivery email
-    await sendDeliveryEmail({
-      to: order.email as string,
-      clientName: (order.client_name as string) || "Client",
-      businessName: (order.business_name as string) || "Votre entreprise",
-      siteHtml,
-      orderId,
-    });
-
-    console.log(`✅ Site generated and delivered for order ${orderId}`);
+    // Email sera envoyé par le cron job après 2h
+    console.log(`✅ Site generated for order ${orderId} — email scheduled in 2h`);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message + "\n" + err.stack : String(err);
     console.error(`❌ Error generating site for order ${orderId}:`, errMsg);
