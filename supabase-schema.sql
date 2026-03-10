@@ -33,6 +33,19 @@ CREATE POLICY "Service role only" ON orders
   USING (false)  -- Deny all public access
   WITH CHECK (false);
 
+-- Table des entreprises prospectées (remplace le CSV local)
+CREATE TABLE IF NOT EXISTS prospected_companies (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  siren TEXT UNIQUE NOT NULL,
+  company_name TEXT,
+  email TEXT,
+  city TEXT,
+  contacted_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_prospected_siren ON prospected_companies(siren);
+ALTER TABLE prospected_companies ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role only prospected" ON prospected_companies USING (false) WITH CHECK (false);
+
 -- Storage bucket pour les photos
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('order-photos', 'order-photos', true)
