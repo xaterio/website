@@ -102,11 +102,12 @@ export async function POST(req: NextRequest) {
         // ── Phase 2 : traitement par ordre alphabétique ──
         let emailsSent = 0;
         let smsSent = 0;
+        let contactsSent = 0;
         let skippedSite = 0;
         let skippedEmail = 0;
 
         for (const biz of allBusinesses) {
-          if (stopped() || emailsSent >= maxEmails) break;
+          if (stopped() || contactsSent >= maxEmails) break;
 
           const name = biz.name;
           const bizCity = biz.city;
@@ -155,6 +156,7 @@ export async function POST(req: NextRequest) {
             });
             contactedSirens.add(biz.placeId);
             if (email) emailsSent++;
+            contactsSent++;
 
             send({
               type: smsSentForThis ? "sent_sms" : "sent",
@@ -162,7 +164,7 @@ export async function POST(req: NextRequest) {
               city: bizCity,
               email: email || undefined,
               phone: mobileNumber || undefined,
-              total: emailsSent,
+              total: contactsSent,
             });
 
             await sleep(400);

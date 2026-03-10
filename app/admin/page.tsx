@@ -328,7 +328,7 @@ export default function AdminPage() {
                   <div className="text-xs font-bold tracking-widests text-gray-500 uppercase">Prospection</div>
                   <div className="text-2xl font-black text-purple-400">
                     {data?.prospection.total || 0}
-                    <span className="text-xs text-gray-500 font-normal ml-1">emails</span>
+                    <span className="text-xs text-gray-500 font-normal ml-1">contactés</span>
                   </div>
                 </div>
                 {data?.prospection.recent.map((p, i) => (
@@ -451,7 +451,7 @@ export default function AdminPage() {
                         </div>
                         <div className="text-center flex-1">
                           <div className="text-xl font-black text-gray-500">{liveStats.skippedEmail}</div>
-                          <div className="text-xs text-gray-500">sans email</div>
+                          <div className="text-xs text-gray-500">sans contact</div>
                         </div>
                       </div>
                     )}
