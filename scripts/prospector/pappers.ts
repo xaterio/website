@@ -76,7 +76,7 @@ export async function searchCompanies({
     throw new Error(`Pappers API error ${res.status}: ${text}`);
   }
 
-  return res.json();
+  return res.json() as Promise<PappersResponse>;
 }
 
 /**
