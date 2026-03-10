@@ -45,7 +45,7 @@ const RESULT_META: Record<ProspectResult["status"], { icon: string; color: strin
   error:             { icon: "❌", color: "#ef4444", label: "Erreur" },
 };
 
-const MAX_OPTIONS = [10, 50, 100, 200, 500, 1000];
+const MAX_OPTIONS = [1, 10, 50, 100, 200, 500, 1000];
 
 export default function AdminPage() {
   const [secret, setSecret] = useState("");
