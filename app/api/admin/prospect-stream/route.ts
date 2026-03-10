@@ -124,24 +124,25 @@ export async function POST(req: NextRequest) {
           }
 
           const email = await findEmailForCompany(name, bizCity);
-          if (!email) {
-            const phone = mobileE164(details.phone);
-            send({ type: "skip_email", name, city: bizCity, phone: phone || undefined });
+          const mobileNumber = mobileE164(details.phone);
+
+          if (!email && !mobileNumber) {
+            send({ type: "skip_email", name, city: bizCity });
             skippedEmail++;
             continue;
           }
 
           try {
-            await sendProspectionEmail({ to: email, companyName: name });
+            const smsText =
+              `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne de developpement web. ` +
+              `Je propose de creer un site professionnel pour ${name} a 150EUR. ` +
+              `Garantie : remboursement si non satisfait + 1 mois de modifications gratuites. ` +
+              `Decouvrez mes realisations sur : ${siteUrl}`;
 
-            const mobileNumber = mobileE164(details.phone);
+            if (email) await sendProspectionEmail({ to: email, companyName: name });
+
             let smsSentForThis = false;
             if (mobileNumber) {
-              const smsText =
-                `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne de developpement web. ` +
-                `Je propose de creer un site professionnel pour ${name} a 150EUR. ` +
-                `Garantie : remboursement si non satisfait + 1 mois de modifications gratuites. ` +
-                `Decouvrez mes realisations sur : ${siteUrl}`;
               smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
               if (smsSentForThis) smsSent++;
             }
@@ -149,17 +150,17 @@ export async function POST(req: NextRequest) {
             await supabase.from("prospected_companies").insert({
               siren: biz.placeId,
               company_name: name,
-              email,
+              email: email || "",
               city: bizCity,
             });
             contactedSirens.add(biz.placeId);
-            emailsSent++;
+            if (email) emailsSent++;
 
             send({
               type: smsSentForThis ? "sent_sms" : "sent",
               name,
               city: bizCity,
-              email,
+              email: email || undefined,
               phone: mobileNumber || undefined,
               total: emailsSent,
             });

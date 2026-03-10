@@ -143,28 +143,32 @@ async function main() {
 
         // Find email
         const email = await findEmailForCompany(name, city);
-        if (!email) {
-          console.log("📭 email introuvable");
+        const mobileNumber = mobileE164(details.phone);
+
+        if (!email && !mobileNumber) {
+          console.log("📭 aucun contact");
           skippedEmail++;
           continue;
         }
 
         try {
-          await resend.emails.send({
-            from: "Alexandre <contact@alexwebdesign.pro>",
-            to: email,
-            subject: "Un site web professionnel pour votre entreprise — 149€",
-            html: buildProspectEmail(name, undefined, siteUrl),
-          });
+          const smsText =
+            `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne de developpement web. ` +
+            `Je propose de creer un site professionnel pour ${name} a 150EUR. ` +
+            `Garantie : remboursement si non satisfait + 1 mois de modifications gratuites. ` +
+            `Decouvrez mes realisations sur : ${siteUrl}`;
 
-          const mobileNumber = mobileE164(details.phone);
+          if (email) {
+            await resend.emails.send({
+              from: "Alexandre <contact@alexwebdesign.pro>",
+              to: email,
+              subject: `Création de site web pour ${name}`,
+              html: buildProspectEmail(name, siteUrl),
+            });
+          }
+
           let smsSentForThis = false;
           if (mobileNumber) {
-            const smsText =
-              `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne de developpement web. ` +
-              `Je propose de creer un site professionnel pour ${name} a 150EUR. ` +
-              `Garantie : remboursement si non satisfait + 1 mois de modifications gratuites. ` +
-              `Decouvrez mes realisations sur : ${siteUrl}`;
             smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
             if (smsSentForThis) smsSent++;
           }
@@ -173,14 +177,14 @@ async function main() {
           await supabase.from("prospected_companies").insert({
             siren: biz.placeId,
             company_name: name,
-            email,
+            email: email || "",
             city,
           });
           contactedSirens.add(biz.placeId);
-          emailsSent++;
+          if (email) emailsSent++;
 
-          const smsTag = smsSentForThis ? " + 📱 SMS" : "";
-          console.log(`✉️  ${email}${smsTag}`);
+          const tag = [email ? `✉️  ${email}` : "", smsSentForThis ? "📱 SMS" : ""].filter(Boolean).join(" + ");
+          console.log(tag);
 
           await sleep(400);
         } catch (e) {
@@ -205,39 +209,34 @@ async function main() {
   if (errors > 0) console.log(`   Erreurs        : ${errors}`);
 }
 
-function buildProspectEmail(companyName: string, directorName: string | undefined, siteUrl: string) {
-  const greeting = directorName ? `Bonjour ${directorName},` : `Bonjour,`;
+function buildProspectEmail(companyName: string, siteUrl: string) {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8">
 <style>
-  body { font-family: -apple-system, Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 40px 20px; }
-  .container { max-width: 560px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; }
-  h2 { color: #1a1a2e; margin-top: 0; }
-  p { color: #444; line-height: 1.7; }
-  .btn { display: inline-block; background: linear-gradient(135deg, #7c3aed, #3b82f6); color: white !important; padding: 14px 28px; border-radius: 50px; font-weight: 700; text-decoration: none; margin: 12px 0; }
-  .price { font-size: 32px; font-weight: 900; color: #7c3aed; }
-  .footer { color: #aaa; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px; }
+  body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; color: #1f2937; line-height: 1.7; }
+  .signature { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+  a { color: #7c3aed; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h2>Un site web professionnel pour ${companyName}</h2>
-  <p>${greeting}</p>
-  <p>Je suis Alexandre, développeur web (16 ans). Je crée des sites web modernes et professionnels pour les PME comme <strong>${companyName}</strong>.</p>
-  <p>Votre site sera :</p>
-  <p>✓ Design moderne et adapté mobile<br>
-     ✓ Optimisé pour Google (SEO)<br>
-     ✓ Livré en 48h<br>
-     ✓ Modifications gratuites pendant 1 mois</p>
-  <p>Tout ça pour seulement <span class="price">149€</span></p>
-  <a href="${siteUrl}" class="btn">Voir mes réalisations →</a>
-  <p>Des questions ? Répondez simplement à cet email.</p>
-  <p>Bonne journée,<br><strong>Alexandre</strong></p>
-  <div class="footer">
-    Pour ne plus recevoir d'emails de ma part, répondez avec "stop" en objet.
-  </div>
-</div>
+  <p>Bonjour,</p>
+  <p>Je me présente : je m'appelle <strong>Alexandre</strong>, j'ai 16 ans et je suis passionné d'informatique, notamment de développement web.</p>
+  <p>En me renseignant sur votre entreprise <strong>${companyName}</strong>, j'ai remarqué que vous ne disposez pas encore de site internet. Aujourd'hui, avoir une présence en ligne peut vraiment aider une entreprise à gagner en visibilité et à attirer de nouveaux clients.</p>
+  <p>Je vous propose donc mes services pour créer un site web moderne, professionnel et adapté à votre activité.</p>
+  <p>Pour <strong>150€</strong>, je réalise un site web de qualité avec un excellent rapport qualité-prix, conçu pour présenter votre entreprise de manière claire et professionnelle.</p>
+  <p>De plus, pour vous garantir une totale satisfaction :</p>
+  <ul>
+    <li>si le site ne vous plaît pas, vous pouvez être entièrement remboursé ;</li>
+    <li>pendant 1 mois après la livraison, je peux effectuer toutes les modifications nécessaires afin que le site corresponde parfaitement à vos attentes.</li>
+  </ul>
+  <p>Si cela vous intéresse, ou simplement si vous souhaitez voir ce que je suis capable de réaliser, je vous invite à consulter mon site web :<br>
+  <a href="${siteUrl}">${siteUrl}</a></p>
+  <p>Je serais ravi d'échanger avec vous si vous avez des questions.</p>
+  <p>Cordialement,</p>
+  <div class="signature"><strong>Alexandre</strong></div>
 </body>
 </html>`;
 }
