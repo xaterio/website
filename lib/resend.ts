@@ -156,7 +156,7 @@ export async function sendProspectionEmail({
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.alexwebdesign.pro";
 
-  return resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: "Alexandre <contact@alexwebdesign.pro>",
     to,
     subject: `Création de site web pour ${companyName}`,
@@ -204,4 +204,6 @@ export async function sendProspectionEmail({
 </html>
     `,
   });
+  if (error) throw new Error(`Resend: ${error.message}`);
+  return data;
 }
