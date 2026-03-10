@@ -30,7 +30,7 @@ function extractEmails(html: string): string[] {
     .filter((e) => e.length < 80); // filtre les faux positifs trop longs
 }
 
-async function fetchPage(url: string, timeoutMs = 8000): Promise<string | null> {
+async function fetchPage(url: string, timeoutMs = 4000): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: HEADERS,
@@ -104,16 +104,15 @@ export async function findEmailForCompany(
   companyName: string,
   city?: string
 ): Promise<string | undefined> {
-  const sources: Array<() => Promise<string | undefined>> = [
-    () => searchPagesJaunes(companyName, city),
-    () => searchDuckDuckGo(companyName, city),
-    () => searchSociete(companyName, city),
-    () => searchAnnuairePoste(companyName, city),
-  ];
+  const results = await Promise.allSettled([
+    searchPagesJaunes(companyName, city),
+    searchDuckDuckGo(companyName, city),
+    searchSociete(companyName, city),
+    searchAnnuairePoste(companyName, city),
+  ]);
 
-  for (const source of sources) {
-    const email = await source();
-    if (email) return email;
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value) return r.value;
   }
 
   return undefined;
