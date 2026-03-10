@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   let emailsSent = 0;
   let smsSent = 0;
 
-  const shuffled = [...BUSINESS_CATEGORIES].sort(() => Math.random() - 0.5);
+  const shuffled = [...BUSINESS_CATEGORIES].sort((a, b) => a.localeCompare(b, "fr"));
   const seenPlaceIds = new Set<string>();
 
   outer:

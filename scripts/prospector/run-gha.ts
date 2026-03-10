@@ -97,7 +97,7 @@ async function main() {
   let skippedEmail = 0;
   let errors = 0;
 
-  const shuffled = [...BUSINESS_CATEGORIES].sort(() => Math.random() - 0.5);
+  const shuffled = [...BUSINESS_CATEGORIES].sort((a, b) => a.localeCompare(b, "fr"));
 
   // Track place IDs to avoid duplicates across categories
   const seenPlaceIds = new Set<string>();
