@@ -1,0 +1,39 @@
+name: Prospection
+
+on:
+  workflow_dispatch:
+    inputs:
+      departement:
+        description: 'Département (ex: 38, 69, 75) — laisser vide pour toute la France'
+        required: false
+        default: ''
+      max:
+        description: 'Nombre d emails max à envoyer'
+        required: false
+        default: '50'
+
+jobs:
+  prospect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run prospection
+        run: npx ts-node --project tsconfig.scripts.json scripts/prospector/run-gha.ts --departement=${{ inputs.departement }} --max=${{ inputs.max }}
+        env:
+          PAPPERS_API_KEY: ${{ secrets.PAPPERS_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}

@@ -67,7 +67,32 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://website-three-zeta-38.vercel.app/api/cron/deliver\" -H \"Authorization: Bearer 7b3606884c91e1976095aee96dc78b29fac5e7c6940e05f03efcebcb0fdf4f0b\")",
       "Bash(curl -s \"https://website-three-zeta-38.vercel.app/api/cron/deliver\" -H \"Authorization: Bearer 7b3606884c91e1976095aee96dc78b29fac5e7c6940e05f03efcebcb0fdf4f0b\")",
       "Bash(curl -s \"https://website-three-zeta-38.vercel.app/api/cron/deliver\")",
-      "Bash(curl -s -o /dev/null -w \"Sans auth: %{http_code}\" \"https://website-three-zeta-38.vercel.app/api/cron/deliver\")"
+      "Bash(curl -s -o /dev/null -w \"Sans auth: %{http_code}\" \"https://website-three-zeta-38.vercel.app/api/cron/deliver\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3333)",
+      "Bash(taskkill /PID 3500 /F)",
+      "Bash(node d:/website/scripts/dashboard.mjs)",
+      "Bash(cmd.exe /c \"taskkill /PID 3500 /F\")",
+      "Bash(node scripts/dashboard.mjs)",
+      "Bash(cmd.exe /c \"taskkill /PID 3500 /F 2>&1\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :3333 | findstr LISTENING\")",
+      "Bash(node -e \"require\\(''twilio''\\)\")",
+      "Bash(npm install twilio --save)",
+      "Bash(npx vercel env ls)",
+      "Bash(npx vercel env pull --environment=production)",
+      "Bash(curl -v --max-time 10 https://alexwebdesign.pro)",
+      "Bash(git add next.config.ts app/api/revise-site/route.ts app/commander/succes/page.tsx scripts/dashboard.mjs)",
+      "Bash(git push origin main)",
+      "Bash(npx vercel logs https://www.alexwebdesign.pro/api/webhook)",
+      "Bash(npx vercel logs --environment production --level error --since 2h --no-follow --query \"webhook\")",
+      "Bash(npx vercel logs --environment production --since 2h --no-follow)",
+      "Bash(npx vercel logs --environment production --since 30m --no-follow)",
+      "Bash(curl -s -X POST http://localhost:3000/api/test-generate -H \"Content-Type: application/json\" -d '{\"\"secret\"\":\"\"alexandre-dev-secret-2026\"\",\"\"sendEmail\"\":false}')",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(npx kill-port 3000)",
+      "Bash(node scripts/test-template.mjs)",
+      "Bash(node scripts/build-html-test.mjs)",
+      "Bash(start d:/website/scripts/preview-bella-beaute.html)",
+      "Bash(node scripts/test-revision-impossible.mjs)"
     ]
   }
 }

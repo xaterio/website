@@ -9,6 +9,7 @@
     "lint": "eslint",
     "prospect": "ts-node --project tsconfig.scripts.json scripts/prospector/index.ts",
     "prospect:test": "ts-node --project tsconfig.scripts.json scripts/prospector/index.ts --test",
+    "prospect:gha": "ts-node --project tsconfig.scripts.json scripts/prospector/run-gha.ts",
     "test:gen": "node scripts/test-gen.mjs",
     "prospect:maps": "node scripts/prospector/google-places.mjs",
     "prospect:maps:dry": "node scripts/prospector/google-places.mjs --dry-run"
@@ -24,7 +25,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^4.1.2",
-    "stripe": "^17.5.0"
+    "stripe": "^17.5.0",
+    "twilio": "^5.12.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

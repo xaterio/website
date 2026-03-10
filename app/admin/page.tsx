@@ -54,6 +54,8 @@ export default function AdminPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [prospecting, setProspecting] = useState(false);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerResult, setTriggerResult] = useState<{ logsUrl: string } | null>(null);
   const [dept, setDept] = useState("");
   const [maxEmails, setMaxEmails] = useState(100);
   const [prospectResults, setProspectResults] = useState<{ sent: number; sentSms: number; total: number; results: ProspectResult[] } | null>(null);
@@ -100,6 +102,26 @@ export default function AdminPage() {
       setProspectError(e instanceof Error ? e.message : "Erreur inconnue");
     } finally {
       setProspecting(false);
+    }
+  };
+
+  const handleTriggerGHA = async () => {
+    setTriggering(true);
+    setTriggerResult(null);
+    setProspectError("");
+    try {
+      const res = await fetch("/api/admin/trigger-workflow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret, departement: dept.trim() || undefined, max: maxEmails }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erreur GitHub Actions");
+      setTriggerResult(json);
+    } catch (e) {
+      setProspectError(e instanceof Error ? e.message : "Erreur inconnue");
+    } finally {
+      setTriggering(false);
     }
   };
 
@@ -278,24 +300,49 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {maxEmails >= 200 && (
-                  <div className="text-xs text-yellow-500/80 bg-yellow-500/8 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
-                    ⏱ {maxEmails} emails peut prendre {Math.round(maxEmails * 2.5 / 60)} à {Math.round(maxEmails * 4 / 60)} min. La fenêtre doit rester ouverte.
+                {/* GitHub Actions — recommended */}
+                <div className="mb-3">
+                  <button
+                    onClick={handleTriggerGHA}
+                    disabled={triggering}
+                    className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all flex items-center justify-center gap-2 ${triggering ? "bg-purple-900/50 cursor-not-allowed" : "btn-gradient"}`}
+                  >
+                    {triggering ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Lancement…
+                      </>
+                    ) : `⚡ Lancer — ${maxEmails} emails`}
+                  </button>
+                  <div className="text-xs text-gray-600 text-center mt-1.5">via GitHub Actions · pas de timeout · tu peux fermer la page</div>
+                </div>
+
+                {triggerResult && (
+                  <div className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2.5 mb-3">
+                    ✅ Prospection lancée !{" "}
+                    <a href={triggerResult.logsUrl} target="_blank" rel="noreferrer" className="underline text-purple-400">
+                      Voir les logs GitHub →
+                    </a>
                   </div>
                 )}
 
-                <button
-                  onClick={handleProspect}
-                  disabled={prospecting}
-                  className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all flex items-center justify-center gap-2 ${prospecting ? "bg-purple-900/50 cursor-not-allowed" : "btn-gradient"}`}
-                >
-                  {prospecting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Envoi en cours… gardez la page ouverte
-                    </>
-                  ) : `🚀 Lancer — ${maxEmails} emails`}
-                </button>
+                {/* Direct — small batches only */}
+                {maxEmails <= 50 && (
+                  <div>
+                    <button
+                      onClick={handleProspect}
+                      disabled={prospecting}
+                      className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border ${prospecting ? "border-white/5 text-gray-600 cursor-not-allowed" : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"}`}
+                    >
+                      {prospecting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white/50 rounded-full animate-spin" />
+                          En cours… gardez la page ouverte
+                        </>
+                      ) : "🔌 Direct (résultats en temps réel)"}
+                    </button>
+                  </div>
+                )}
 
                 {prospectError && (
                   <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">

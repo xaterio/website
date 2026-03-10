@@ -1,0 +1,81 @@
+{
+  "heroTag": "Salon de beauté · Lyon",
+  "heroTitle1": "Révélez votre beauté",
+  "heroTitle2": "naturelle et lumineuse",
+  "heroSub": "Un écrin de luxe et de bien-être au cœur de Lyon pour sublimer chaque cliente avec soin et raffinement.",
+  "heroCta1": "Nos soins",
+  "heroCta2": "Prendre rendez-vous",
+  "stat1Num": "4",
+  "stat1Label": "soins signature proposés",
+  "stat2Num": "3",
+  "stat2Label": "esthéticiennes diplômées",
+  "stat3Num": "5★",
+  "stat3Label": "expérience client haut de gamme",
+  "servicesTitle": "Nos soins d'exception",
+  "servicesSub": "Des prestations haut de gamme réalisées par des esthéticiennes diplômées dans un cadre raffiné et apaisant.",
+  "services": [
+    {
+      "emoji": "✨",
+      "title": "Soins du visage",
+      "desc": "Des soins visage personnalisés et luxueux pour révéler l'éclat naturel de votre peau, réalisés par des esthéticiennes diplômées dans un cadre serein."
+    },
+    {
+      "emoji": "🌿",
+      "title": "Épilation",
+      "desc": "Une épilation douce et précise, réalisée avec les meilleures techniques pour un résultat impeccable et durable dans un environnement apaisant."
+    },
+    {
+      "emoji": "💅",
+      "title": "Manucure",
+      "desc": "Manucure soignée et élégante pour des mains sublimes. Finitions parfaites, vernis longue tenue et soin des ongles réalisés avec expertise et délicatesse."
+    },
+    {
+      "emoji": "🦶",
+      "title": "Pédicure",
+      "desc": "Pédicure complète et relaxante pour des pieds doux et des ongles impeccables. Un moment de détente pure dans notre salon haut de gamme lyonnais."
+    }
+  ],
+  "aboutTag": "À propos",
+  "aboutTitle": "Bella Beauté, votre sanctuaire de bien-être à Lyon",
+  "aboutP1": "Fondé en 2019 en plein cœur de Lyon, Bella Beauté accueille ses clientes dans un cadre chaleureux et luxueux. Notre équipe de trois esthéticiennes diplômées vous offre des soins personnalisés avec passion et savoir-faire.",
+  "aboutP2": "Nous croyons que chaque femme mérite de se sentir belle et apaisée. Notre engagement : vous offrir une expérience haut de gamme, alliant excellence des soins, écoute et atmosphère enveloppante.",
+  "aboutCta": "Nous contacter",
+  "faqTitle": "Questions fréquentes",
+  "faqs": [
+    {
+      "q": "Comment prendre rendez-vous au salon Bella Beauté ?",
+      "a": "Vous pouvez nous contacter par téléphone au 04 72 11 22 33 ou par email afin de réserver votre créneau selon vos disponibilités."
+    },
+    {
+      "q": "Faut-il arriver à l'avance avant son soin ?",
+      "a": "Nous recommandons d'arriver 5 à 10 minutes avant votre rendez-vous pour vous installer sereinement et profiter pleinement de votre moment de détente."
+    },
+    {
+      "q": "Les soins du visage sont-ils adaptés à tous les types de peau ?",
+      "a": "Oui, nos esthéticiennes diplômées personnalisent chaque soin visage en fonction de votre type de peau et de vos besoins spécifiques."
+    },
+    {
+      "q": "Proposez-vous des prestations en duo ou des forfaits bien-être ?",
+      "a": "Contactez-nous directement pour connaître nos offres et forfaits disponibles, nous serons ravies de vous conseiller selon vos envies."
+    }
+  ],
+  "testiTitle": "Ce que disent nos clientes",
+  "testi1Text": "Un salon d'exception ! L'équipe est aux petits soins, je repars à chaque fois transformée.",
+  "testi1Name": "Camille",
+  "testi1City": "Lyon",
+  "testi2Text": "Manucure parfaite et ambiance super zen. Je recommande à 100% !",
+  "testi2Name": "Inès",
+  "testi2City": "Villeurbanne",
+  "testi3Text": "Les soins du visage sont incroyables, ma peau n'a jamais été aussi belle.",
+  "testi3Name": "Lucie",
+  "testi3City": "Lyon 6e",
+  "contactTitle": "Réservez votre moment de beauté",
+  "address": "18 Rue de la République, 69001 Lyon",
+  "phone": "04 72 11 22 33",
+  "email": "contact@bellabeaute-lyon.fr",
+  "formPlaceholder": "Décrivez le soin souhaité ou posez-nous votre question…",
+  "formCta": "Envoyer ma demande",
+  "navCta": "Prendre RDV",
+  "metaDesc": "Bella Beauté, salon haut de gamme à Lyon : soins visage, épilation, manucure et pédicure. Équipe diplômée, cadre raffiné. Prenez RDV dès maintenant.",
+  "year": "2026"
+}
