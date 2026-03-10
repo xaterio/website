@@ -34,6 +34,7 @@ interface LogEntry {
   cityMain?: string;
   total?: number;
   sent?: number;
+  emailsSent?: number;
   smsSent?: number;
   skippedSite?: number;
   skippedEmail?: number;
@@ -161,7 +162,7 @@ export default function AdminPage() {
             } else if (ev.type === "warn") {
               addLog({ type: "warn", message: ev.message });
             } else if (ev.type === "done") {
-              addLog({ type: "done", sent: ev.sent, smsSent: ev.smsSent, skippedSite: ev.skippedSite, skippedEmail: ev.skippedEmail });
+              addLog({ type: "done", sent: ev.sent, emailsSent: ev.emailsSent, smsSent: ev.smsSent, skippedSite: ev.skippedSite, skippedEmail: ev.skippedEmail });
               await loadDashboard(secret);
             } else if (ev.type === "fatal") {
               setProspectError(ev.message);
@@ -577,10 +578,13 @@ function LogLine({ entry }: { entry: LogEntry }) {
     return <div className="text-red-400 border-t border-white/5 pt-1 mt-1">⏹ Arrêté manuellement</div>;
   }
   if (entry.type === "done") {
+    const parts = [];
+    if ((entry.emailsSent || 0) > 0) parts.push(`${entry.emailsSent} email${(entry.emailsSent || 0) > 1 ? "s" : ""}`);
+    if ((entry.smsSent || 0) > 0) parts.push(`${entry.smsSent} SMS`);
+    const summary = parts.length ? parts.join(" + ") : "aucun contact";
     return (
       <div className="border-t border-white/5 pt-1.5 mt-1 text-green-400">
-        ✅ Terminé — {entry.sent} email{(entry.sent || 0) > 1 ? "s" : ""} envoyé{(entry.sent || 0) > 1 ? "s" : ""}
-        {(entry.smsSent || 0) > 0 && ` + ${entry.smsSent} SMS`}
+        ✅ Terminé — {summary} envoyé{(entry.sent || 0) > 1 ? "s" : ""}
       </div>
     );
   }

@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        send({ type: "done", sent: emailsSent, smsSent, skippedSite, skippedEmail });
+        send({ type: "done", sent: contactsSent, emailsSent, smsSent, skippedSite, skippedEmail });
       } catch (e) {
         send({ type: "fatal", message: String(e) });
       } finally {
