@@ -150,18 +150,16 @@ export async function sendImpossibleRevisionEmail({
 export async function sendProspectionEmail({
   to,
   companyName,
-  directorName,
 }: {
   to: string;
   companyName: string;
-  directorName?: string;
 }) {
-  const greeting = "Bonjour";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.alexwebdesign.pro";
 
   return resend.emails.send({
     from: "Alexandre <contact@alexwebdesign.pro>",
     to,
-    subject: `Un site web professionnel pour ${companyName} ?`,
+    subject: `Création de site web pour ${companyName}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -171,35 +169,36 @@ export async function sendProspectionEmail({
     body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; color: #1f2937; line-height: 1.7; }
     .signature { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
     a { color: #7c3aed; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 4px; }
   </style>
 </head>
 <body>
-  <p>${greeting},</p>
+  <p>Bonjour,</p>
 
-  <p>Je me permets de vous contacter car j'ai remarqué que <strong>${companyName}</strong> n'a pas encore de site web, et je pense que vous méritez une belle vitrine en ligne.</p>
+  <p>Je me présente : je m'appelle <strong>Alexandre</strong>, j'ai 16 ans et je suis passionné d'informatique, notamment de développement web.</p>
 
-  <p>Je m'appelle <strong>Alexandre</strong>, j'ai 16 ans et je suis passionné d'informatique depuis tout petit. Pour gagner en expérience, je propose de créer votre site web professionnel pour seulement <strong>149€</strong> — un tarif que vous ne trouverez nulle part ailleurs pour la qualité proposée.</p>
+  <p>En me renseignant sur votre entreprise <strong>${companyName}</strong>, j'ai remarqué que vous ne disposez pas encore de site internet. Aujourd'hui, avoir une présence en ligne peut vraiment aider une entreprise à gagner en visibilité et à attirer de nouveaux clients.</p>
 
-  <p>Ce que vous obtenez :</p>
+  <p>Je vous propose donc mes services pour créer un site web moderne, professionnel et adapté à votre activité.</p>
+
+  <p>Pour <strong>150€</strong>, je réalise un site web de qualité avec un excellent rapport qualité-prix, conçu pour présenter votre entreprise de manière claire et professionnelle.</p>
+
+  <p>De plus, pour vous garantir une totale satisfaction :</p>
   <ul>
-    <li>✓ Un site web professionnel sur mesure</li>
-    <li>✓ Design moderne et responsive (mobile + tablette)</li>
-    <li>✓ Formulaire de contact, galerie photos, infos entreprise</li>
-    <li>✓ Livraison en 48 heures</li>
-    <li>✓ Satisfait ou remboursé</li>
+    <li>si le site ne vous plaît pas, vous pouvez être entièrement remboursé ;</li>
+    <li>pendant 1 mois après la livraison, je peux effectuer toutes les modifications nécessaires afin que le site corresponde parfaitement à vos attentes.</li>
   </ul>
 
-  <p>Vous pouvez voir des exemples de mes réalisations sur mon site : <a href="${process.env.NEXT_PUBLIC_SITE_URL}">${process.env.NEXT_PUBLIC_SITE_URL}</a></p>
+  <p>Si cela vous intéresse, ou simplement si vous souhaitez voir ce que je suis capable de réaliser, je vous invite à consulter mon site web :<br>
+  <a href="${siteUrl}">${siteUrl}</a></p>
 
-  <p>Si cela vous intéresse, répondez simplement à cet email ou commandez directement en ligne. Je serai ravi de vous accompagner !</p>
+  <p>Je serais ravi d'échanger avec vous si vous avez des questions.</p>
 
   <p>Cordialement,</p>
 
   <div class="signature">
-    <strong>Alexandre</strong><br>
-    Développeur Web · 16 ans · Passionné d'informatique<br>
-    alexandre.ammi38@gmail.com<br>
-    <a href="${process.env.NEXT_PUBLIC_SITE_URL}">${process.env.NEXT_PUBLIC_SITE_URL}</a>
+    <strong>Alexandre</strong>
   </div>
 </body>
 </html>

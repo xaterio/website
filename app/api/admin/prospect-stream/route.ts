@@ -138,9 +138,10 @@ export async function POST(req: NextRequest) {
             let smsSentForThis = false;
             if (mobileNumber) {
               const smsText =
-                `Bonjour, je suis Alexandre (16 ans, dev web). ` +
-                `Je crée des sites pro pour les PME à seulement 149€. ` +
-                `Intéressé pour ${name} ? Voir mes réalisations : ${siteUrl}`;
+                `Bonjour, je m'appelle Alexandre, j'ai 16 ans et je suis passionne de developpement web. ` +
+                `Je propose de creer un site professionnel pour ${name} a 150EUR. ` +
+                `Garantie : remboursement si non satisfait + 1 mois de modifications gratuites. ` +
+                `Decouvrez mes realisations sur : ${siteUrl}`;
               smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
               if (smsSentForThis) smsSent++;
             }
