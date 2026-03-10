@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { searchCompanies, TARGET_NAF_CODES } from "@/scripts/prospector/pappers";
-import { hasWebsite, extractEmail } from "@/scripts/prospector/check-website";
+import { searchBusinesses, getPlaceDetails, BUSINESS_CATEGORIES } from "@/scripts/prospector/google-maps";
 import { findEmailForCompany } from "@/scripts/prospector/find-email";
 import { sendProspectionEmail } from "@/lib/resend";
 
@@ -12,16 +11,6 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function getDirectorName(company: { representants?: Array<{ nom?: string; prenom?: string }> }) {
-  const rep = company.representants?.[0];
-  if (!rep) return undefined;
-  return rep.prenom ? `${rep.prenom} ${rep.nom || ""}`.trim() : rep.nom;
-}
-
-/**
- * Normalise un numéro FR et renvoie true s'il est mobile (06 ou 07)
- * Retourne le numéro formaté +33... ou null si non mobile / invalide
- */
 function mobileE164(raw: string | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/[\s.\-()]/g, "");
@@ -78,73 +67,54 @@ export async function POST(req: NextRequest) {
   let emailsSent = 0;
   let smsSent = 0;
 
-  // Shuffle NAF codes to vary targets each run
-  const shuffled = [...TARGET_NAF_CODES].sort(() => Math.random() - 0.5);
+  const shuffled = [...BUSINESS_CATEGORIES].sort(() => Math.random() - 0.5);
+  const seenPlaceIds = new Set<string>();
 
   outer:
-  for (const naf of shuffled) {
-    let page = 1;
-    while (emailsSent < maxEmails) {
-      let companies;
+  for (const category of shuffled) {
+    let pageToken: string | undefined;
+    let pageCount = 0;
+
+    do {
+      let result;
       try {
-        const res = await searchCompanies({
-          minRevenue: 150_000,
-          maxRevenue: 2_000_000,
-          page,
-          perPage: 25,
-          departement: departement || undefined,
-          codeNaf: naf,
-        });
-        companies = res.resultats;
+        result = await searchBusinesses({ category, departement: departement || undefined, pageToken });
       } catch {
-        break; // Move to next NAF code
+        break;
       }
 
-      if (!companies || companies.length === 0) break;
+      if (result.businesses.length === 0) break;
 
-      for (const company of companies) {
+      for (const biz of result.businesses) {
         if (emailsSent >= maxEmails) break outer;
+        if (seenPlaceIds.has(biz.placeId)) continue;
+        seenPlaceIds.add(biz.placeId);
 
-        const siren = company.siren;
-        const name = company.nom_entreprise;
-        const city = company.siege?.ville || "";
-        const rawPhone = company.siege?.telephone;
+        const name = biz.name;
+        const city = biz.city;
 
-        // Skip already contacted
-        if (contactedSirens.has(siren)) {
+        if (contactedSirens.has(biz.placeId)) {
           results.push({ company: name, email: "", city, status: "skip_contacted" });
           continue;
         }
 
-        // Skip if has website
-        const alreadyHasSite = await hasWebsite(name, company.siege?.site_web);
-        if (alreadyHasSite) {
+        const details = await getPlaceDetails(biz.placeId);
+        if (details.hasWebsite) {
           results.push({ company: name, email: "", city, status: "skip_site" });
-          contactedSirens.add(siren);
+          contactedSirens.add(biz.placeId);
           continue;
         }
 
-        // Find email
-        let email = extractEmail(company);
-        if (!email) {
-          email = await findEmailForCompany(name, city);
-        }
-
+        const email = await findEmailForCompany(name, city);
         if (!email) {
           results.push({ company: name, email: "", city, status: "skip_email" });
           continue;
         }
 
-        // Send email
         try {
-          await sendProspectionEmail({
-            to: email,
-            companyName: name,
-            directorName: getDirectorName(company),
-          });
+          await sendProspectionEmail({ to: email, companyName: name });
 
-          // Check for mobile number → send SMS via Brevo
-          const mobileNumber = mobileE164(rawPhone);
+          const mobileNumber = mobileE164(details.phone);
           let smsSentForThis = false;
           if (mobileNumber) {
             const smsText =
@@ -155,14 +125,13 @@ export async function POST(req: NextRequest) {
             if (smsSentForThis) smsSent++;
           }
 
-          // Save to Supabase
           await supabase.from("prospected_companies").insert({
-            siren,
+            siren: biz.placeId,
             company_name: name,
             email,
             city,
           });
-          contactedSirens.add(siren);
+          contactedSirens.add(biz.placeId);
 
           results.push({
             company: name,
@@ -179,9 +148,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      page++;
-      if (companies.length < 25) break; // No more pages for this NAF
-    }
+      pageToken = result.nextPageToken;
+      pageCount++;
+      if (pageToken) await sleep(2000);
+    } while (pageToken && pageCount < 3);
   }
 
   return NextResponse.json({

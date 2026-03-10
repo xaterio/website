@@ -31,7 +31,7 @@ jobs:
       - name: Run prospection
         run: npx ts-node --project tsconfig.scripts.json scripts/prospector/run-gha.ts --departement=${{ inputs.departement }} --max=${{ inputs.max }}
         env:
-          PAPPERS_API_KEY: ${{ secrets.PAPPERS_API_KEY }}
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

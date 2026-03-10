@@ -8,8 +8,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import { createClient } from "@supabase/supabase-js";
-import { searchCompanies, TARGET_NAF_CODES } from "./pappers";
-import { hasWebsite, extractEmail } from "./check-website";
+import { searchBusinesses, getPlaceDetails, BUSINESS_CATEGORIES } from "./google-maps";
 import { findEmailForCompany } from "./find-email";
 import { Resend } from "resend";
 
@@ -56,12 +55,6 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function getDirectorName(company: { representants?: Array<{ nom?: string; prenom?: string }> }) {
-  const rep = company.representants?.[0];
-  if (!rep) return undefined;
-  return rep.prenom ? `${rep.prenom} ${rep.nom || ""}`.trim() : rep.nom;
-}
-
 function mobileE164(raw: string | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/[\s.\-()]/g, "");
@@ -104,53 +97,52 @@ async function main() {
   let skippedEmail = 0;
   let errors = 0;
 
-  const shuffled = [...TARGET_NAF_CODES].sort(() => Math.random() - 0.5);
+  const shuffled = [...BUSINESS_CATEGORIES].sort(() => Math.random() - 0.5);
+
+  // Track place IDs to avoid duplicates across categories
+  const seenPlaceIds = new Set<string>();
 
   outer:
-  for (const naf of shuffled) {
-    let page = 1;
-    while (emailsSent < maxEmails) {
-      let companies;
+  for (const category of shuffled) {
+    console.log(`\n🔍 Catégorie: ${category}${departement ? ` (dept ${departement})` : ""}`);
+    let pageToken: string | undefined;
+    let pageCount = 0;
+
+    do {
+      let result;
       try {
-        const res = await searchCompanies({
-          minRevenue: 150_000,
-          maxRevenue: 2_000_000,
-          page,
-          perPage: 25,
-          departement,
-          codeNaf: naf,
-        });
-        companies = res.resultats;
+        result = await searchBusinesses({ category, departement, pageToken });
       } catch (e) {
-        console.error(`  ⚠️  Erreur Pappers NAF ${naf}:`, e);
+        console.error(`  ⚠️  Erreur Google Maps (${category}):`, e);
         break;
       }
 
-      if (!companies || companies.length === 0) break;
+      if (result.businesses.length === 0) break;
 
-      for (const company of companies) {
+      for (const biz of result.businesses) {
         if (emailsSent >= maxEmails) break outer;
+        if (seenPlaceIds.has(biz.placeId)) continue;
+        seenPlaceIds.add(biz.placeId);
 
-        const siren = company.siren;
-        const name = company.nom_entreprise;
-        const city = company.siege?.ville || "";
-        const rawPhone = company.siege?.telephone;
+        const name = biz.name;
+        const city = biz.city;
 
-        if (contactedSirens.has(siren)) continue;
+        // Skip if already contacted (using placeId as unique key)
+        if (contactedSirens.has(biz.placeId)) continue;
 
         process.stdout.write(`  → ${name.slice(0, 40).padEnd(40)} `);
 
-        const alreadyHasSite = await hasWebsite(name, company.siege?.site_web);
-        if (alreadyHasSite) {
+        // Check website via Place Details
+        const details = await getPlaceDetails(biz.placeId);
+        if (details.hasWebsite) {
           console.log("🌐 a déjà un site");
           skippedSite++;
-          contactedSirens.add(siren);
+          contactedSirens.add(biz.placeId);
           continue;
         }
 
-        let email = extractEmail(company);
-        if (!email) email = await findEmailForCompany(name, city) ?? undefined;
-
+        // Find email
+        const email = await findEmailForCompany(name, city);
         if (!email) {
           console.log("📭 email introuvable");
           skippedEmail++;
@@ -162,10 +154,10 @@ async function main() {
             from: "Alexandre <contact@alexwebdesign.pro>",
             to: email,
             subject: "Un site web professionnel pour votre entreprise — 149€",
-            html: buildProspectEmail(name, getDirectorName(company), siteUrl),
+            html: buildProspectEmail(name, undefined, siteUrl),
           });
 
-          const mobileNumber = mobileE164(rawPhone);
+          const mobileNumber = mobileE164(details.phone);
           let smsSentForThis = false;
           if (mobileNumber) {
             const smsText =
@@ -176,8 +168,14 @@ async function main() {
             if (smsSentForThis) smsSent++;
           }
 
-          await supabase.from("prospected_companies").insert({ siren, company_name: name, email, city });
-          contactedSirens.add(siren);
+          // Save with placeId as "siren" (unique identifier)
+          await supabase.from("prospected_companies").insert({
+            siren: biz.placeId,
+            company_name: name,
+            email,
+            city,
+          });
+          contactedSirens.add(biz.placeId);
           emailsSent++;
 
           const smsTag = smsSentForThis ? " + 📱 SMS" : "";
@@ -190,9 +188,11 @@ async function main() {
         }
       }
 
-      page++;
-      if (companies.length < 25) break;
-    }
+      pageToken = result.nextPageToken;
+      pageCount++;
+      // Google Places max 3 pages (60 results) per query, wait 2s between pages
+      if (pageToken) await sleep(2000);
+    } while (pageToken && pageCount < 3);
   }
 
   console.log("\n" + "=".repeat(55));
