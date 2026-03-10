@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { sendDeliveryEmail } from "@/lib/resend";
+import { sendDeliveryEmail, sendImpossibleRevisionEmail } from "@/lib/resend";
 
 async function callClaudeRaw(prompt: string, maxTokens: number): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
     await supabase.from("orders").update({ status: "generating" }).eq("id", orderId);
 
     // Révision synchrone (Vercel tue les background functions sur Hobby)
-    await reviseSiteAndDeliver(orderId, order, request, supabase);
+    const result = await reviseSiteAndDeliver(orderId, order, request, supabase);
+
+    if (result?.impossible) {
+      return NextResponse.json({ impossible: true, reason: result.reason }, { status: 422 });
+    }
 
     return NextResponse.json({ success: true, message: "Révision en cours, vous recevrez un email dans quelques minutes." });
   } catch (err) {
@@ -69,7 +73,7 @@ async function reviseSiteAndDeliver(
   revisionRequest: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any
-) {
+): Promise<{ impossible: true; reason: string } | null> {
   try {
     const currentHtml = order.site_html as string;
     const businessName = (order.business_name as string) || "Votre entreprise";
@@ -112,7 +116,14 @@ ${currentHtml}`;
     if (newHtml.startsWith("IMPOSSIBLE:")) {
       const reason = newHtml.slice("IMPOSSIBLE:".length).trim();
       await supabase.from("orders").update({ status: "delivered" }).eq("id", orderId);
-      throw new Error(`Modification impossible : ${reason}`);
+      await sendImpossibleRevisionEmail({
+        to: order.email as string,
+        clientName,
+        businessName,
+        reason,
+        orderId,
+      });
+      return { impossible: true, reason };
     }
 
     // Sauvegarder le nouveau HTML
@@ -131,8 +142,10 @@ ${currentHtml}`;
     });
 
     console.log(`✅ Site révisé et livré pour commande ${orderId}`);
+    return null;
   } catch (err) {
     console.error(`❌ Erreur révision site ${orderId}:`, err);
     await supabase.from("orders").update({ status: "delivered" }).eq("id", orderId);
+    return null;
   }
 }
