@@ -16,10 +16,13 @@ const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 
 const BLACKLISTED_DOMAINS = [
   "pagesjaunes", "solocal", "societe.com", "pappers", "google",
-  "example", "test", "w3.org", "sentry", "facebook", "twitter",
-  "instagram", "linkedin", "apple", "microsoft", "amazon",
-  "cloudflare", "vercel", "supabase", "stripe", "resend",
+  "duckduckgo", "bing", "yahoo", "yandex",
+  "example", "test", "w3.org", "sentry", "noreply", "no-reply",
+  "facebook", "twitter", "instagram", "linkedin", "tiktok",
+  "apple", "microsoft", "amazon", "cloudflare",
+  "vercel", "supabase", "stripe", "resend",
   "infogreffe", "sirene", "legifrance",
+  "laposte.fr", "orange.fr", "sfr.fr", "free.fr",
 ];
 
 function extractEmails(html: string): string[] {
