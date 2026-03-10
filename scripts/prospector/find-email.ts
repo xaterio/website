@@ -1,8 +1,6 @@
 /**
- * Cherche l'email d'une entreprise via plusieurs sources
- * 1. Pages Jaunes
- * 2. Societe.com
- * 3. DuckDuckGo (recherche web sans clé API)
+ * Cherche l'email d'une entreprise via Pages Jaunes (annuaire pros)
+ * Stratégie : chercher la fiche de l'entreprise, puis visiter sa page pour extraire l'email
  */
 
 const HEADERS = {
@@ -22,7 +20,7 @@ const BLACKLISTED_DOMAINS = [
   "apple", "microsoft", "amazon", "cloudflare",
   "vercel", "supabase", "stripe", "resend",
   "infogreffe", "sirene", "legifrance",
-  "laposte.fr", "orange.fr", "sfr.fr", "free.fr",
+  "wixsite", "wordpress", "jimdo", "weebly", "squarespace",
 ];
 
 function extractEmails(html: string): string[] {
@@ -30,10 +28,10 @@ function extractEmails(html: string): string[] {
   return matches
     .map((e) => e.toLowerCase())
     .filter((e) => !BLACKLISTED_DOMAINS.some((b) => e.includes(b)))
-    .filter((e) => e.length < 80); // filtre les faux positifs trop longs
+    .filter((e) => e.length < 80);
 }
 
-async function fetchPage(url: string, timeoutMs = 4000): Promise<string | null> {
+async function fetchPage(url: string, timeoutMs = 5000): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: HEADERS,
@@ -46,62 +44,55 @@ async function fetchPage(url: string, timeoutMs = 4000): Promise<string | null> 
   }
 }
 
-/** Source 1 : Pages Jaunes */
+/**
+ * Pages Jaunes : cherche la fiche pro, visite la page de l'entreprise, extrait l'email
+ */
 async function searchPagesJaunes(name: string, city?: string): Promise<string | undefined> {
-  const query = encodeURIComponent(`${name} ${city || ""}`.trim());
-  const html = await fetchPage(
-    `https://www.pagesjaunes.fr/pagesblanches/recherche?quoi=${query}&ou=France`
+  const query = encodeURIComponent(name.trim());
+  const where = encodeURIComponent(city || "France");
+
+  // 1. Cherche dans l'annuaire des professionnels
+  const searchHtml = await fetchPage(
+    `https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=${query}&ou=${where}`
   );
-  if (!html) return undefined;
-  return extractEmails(html)[0];
-}
+  if (!searchHtml) return undefined;
 
-/** Source 2 : Societe.com */
-async function searchSociete(name: string, city?: string): Promise<string | undefined> {
-  const query = encodeURIComponent(`${name} ${city || ""}`.trim());
-  const html = await fetchPage(
-    `https://www.societe.com/cgi-bin/search?champs=${query}`
-  );
-  if (!html) return undefined;
-  return extractEmails(html)[0];
-}
+  // 2. Extrait le lien vers la première fiche correspondante
+  const linkMatch = searchHtml.match(/href="(\/pros\/[^"]+)"/);
+  if (!linkMatch) return undefined;
 
-/** Source 3 : DuckDuckGo HTML (pas de clé API) */
-async function searchDuckDuckGo(name: string, city?: string): Promise<string | undefined> {
-  // Cherche directement l'email sur le web
-  const queries = [
-    `"${name}" ${city || ""} email contact`,
-    `"${name}" ${city || ""} "@"`,
-  ];
+  // 3. Visite la page de l'entreprise
+  const ficheHtml = await fetchPage(`https://www.pagesjaunes.fr${linkMatch[1]}`);
+  if (!ficheHtml) return undefined;
 
-  for (const q of queries) {
-    const html = await fetchPage(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}&kl=fr-fr`
-    );
-    if (!html) continue;
-
-    const emails = extractEmails(html);
-    if (emails.length > 0) return emails[0];
-
-    // Petite pause pour éviter le rate limiting
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-
-  return undefined;
-}
-
-/** Source 4 : Annuaire La Poste */
-async function searchAnnuairePoste(name: string, city?: string): Promise<string | undefined> {
-  const query = encodeURIComponent(`${name} ${city || ""}`.trim());
-  const html = await fetchPage(
-    `https://www.laposte.fr/particulier/outils/annuaire-des-professionnels?recherche=${query}`
-  );
-  if (!html) return undefined;
-  return extractEmails(html)[0];
+  return extractEmails(ficheHtml)[0];
 }
 
 /**
- * Cherche l'email d'une entreprise en essayant plusieurs sources dans l'ordre
+ * Societe.com : cherche la fiche entreprise et extrait l'email
+ */
+async function searchSociete(name: string, city?: string): Promise<string | undefined> {
+  const query = encodeURIComponent(`${name} ${city || ""}`.trim());
+  const searchHtml = await fetchPage(
+    `https://www.societe.com/cgi-bin/search?champs=${query}`
+  );
+  if (!searchHtml) return undefined;
+
+  // Extrait le lien vers la première fiche
+  const linkMatch = searchHtml.match(/href="(\/societe\/[^"]+\.html)"/);
+  if (!linkMatch) {
+    // Essaie d'extraire directement depuis les résultats
+    return extractEmails(searchHtml)[0];
+  }
+
+  const ficheHtml = await fetchPage(`https://www.societe.com${linkMatch[1]}`);
+  if (!ficheHtml) return undefined;
+
+  return extractEmails(ficheHtml)[0];
+}
+
+/**
+ * Cherche l'email d'une entreprise
  */
 export async function findEmailForCompany(
   companyName: string,
@@ -109,9 +100,7 @@ export async function findEmailForCompany(
 ): Promise<string | undefined> {
   const results = await Promise.allSettled([
     searchPagesJaunes(companyName, city),
-    searchDuckDuckGo(companyName, city),
     searchSociete(companyName, city),
-    searchAnnuairePoste(companyName, city),
   ]);
 
   for (const r of results) {
