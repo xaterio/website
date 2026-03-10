@@ -45,6 +45,17 @@ function RevisionChat({ orderId }: { orderId: string }) {
       });
       const data = await res.json();
 
+      if (res.status === 422 && data.impossible) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: `⚠️ Cette modification n'est pas réalisable dans votre formule actuelle.\n\n${data.reason}\n\nVous avez reçu un email avec les détails. Pour les modifications disponibles (textes, couleurs, sections…), n'hésitez pas à reformuler votre demande.`,
+          },
+        ]);
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error || "Erreur inconnue");
 
       setMessages((prev) => [
