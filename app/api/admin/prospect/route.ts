@@ -18,14 +18,46 @@ function getDirectorName(company: { representants?: Array<{ nom?: string; prenom
   return rep.prenom ? `${rep.prenom} ${rep.nom || ""}`.trim() : rep.nom;
 }
 
+/**
+ * Normalise un numéro FR et renvoie true s'il est mobile (06 ou 07)
+ * Retourne le numéro formaté +33... ou null si non mobile / invalide
+ */
+function mobileE164(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/[\s.\-()]/g, "");
+  // Formats: 06XXXXXXXX, 07XXXXXXXX, +336XXXXXXXX, +337XXXXXXXX, 336XXXXXXXX
+  let normalized = digits;
+  if (normalized.startsWith("+33")) normalized = "0" + normalized.slice(3);
+  if (normalized.startsWith("33") && normalized.length === 11) normalized = "0" + normalized.slice(2);
+  if ((normalized.startsWith("06") || normalized.startsWith("07")) && normalized.length === 10) {
+    return "+33" + normalized.slice(1);
+  }
+  return null;
+}
+
+async function sendBrevoSms(to: string, message: string): Promise<boolean> {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) return false;
+  try {
+    const res = await fetch("https://api.brevo.com/v3/transactionalSMS/sms", {
+      method: "POST",
+      headers: { "api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ sender: "Alexandre", recipient: to, content: message }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
-  const { secret, departement, max = 10 } = await req.json();
+  const { secret, departement, max = 100 } = await req.json();
 
   if (secret !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const maxEmails = Math.min(Number(max), 15); // Hard cap at 15 per run
+  const maxEmails = Number(max);
   const supabase = getSupabaseAdmin();
 
   // Load already contacted SIRENs from Supabase
@@ -34,8 +66,17 @@ export async function POST(req: NextRequest) {
     .select("siren");
   const contactedSirens = new Set((contacted || []).map((r: { siren: string }) => r.siren));
 
-  const results: Array<{ company: string; email: string; city: string; status: "sent" | "skip_site" | "skip_email" | "skip_contacted" | "error" }> = [];
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alexwebdesign.pro";
+
+  const results: Array<{
+    company: string;
+    email: string;
+    phone?: string;
+    city: string;
+    status: "sent" | "sent_sms" | "skip_site" | "skip_email" | "skip_contacted" | "error";
+  }> = [];
   let emailsSent = 0;
+  let smsSent = 0;
 
   // Shuffle NAF codes to vary targets each run
   const shuffled = [...TARGET_NAF_CODES].sort(() => Math.random() - 0.5);
@@ -50,7 +91,7 @@ export async function POST(req: NextRequest) {
           minRevenue: 150_000,
           maxRevenue: 2_000_000,
           page,
-          perPage: 20,
+          perPage: 25,
           departement: departement || undefined,
           codeNaf: naf,
         });
@@ -67,6 +108,7 @@ export async function POST(req: NextRequest) {
         const siren = company.siren;
         const name = company.nom_entreprise;
         const city = company.siege?.ville || "";
+        const rawPhone = company.siege?.telephone;
 
         // Skip already contacted
         if (contactedSirens.has(siren)) {
@@ -75,11 +117,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Skip if has website
-        const siteWeb = company.siege?.site_web;
-        const alreadyHasSite = await hasWebsite(name, siteWeb);
+        const alreadyHasSite = await hasWebsite(name, company.siege?.site_web);
         if (alreadyHasSite) {
           results.push({ company: name, email: "", city, status: "skip_site" });
-          contactedSirens.add(siren); // Don't check again
+          contactedSirens.add(siren);
           continue;
         }
 
@@ -102,6 +143,18 @@ export async function POST(req: NextRequest) {
             directorName: getDirectorName(company),
           });
 
+          // Check for mobile number → send SMS via Brevo
+          const mobileNumber = mobileE164(rawPhone);
+          let smsSentForThis = false;
+          if (mobileNumber) {
+            const smsText =
+              `Bonjour, je suis Alexandre (16 ans, dev web). ` +
+              `Je crée des sites pro pour les PME à seulement 149€. ` +
+              `Intéressé pour ${name} ? Voir mes réalisations : ${siteUrl}`;
+            smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
+            if (smsSentForThis) smsSent++;
+          }
+
           // Save to Supabase
           await supabase.from("prospected_companies").insert({
             siren,
@@ -111,22 +164,29 @@ export async function POST(req: NextRequest) {
           });
           contactedSirens.add(siren);
 
-          results.push({ company: name, email, city, status: "sent" });
+          results.push({
+            company: name,
+            email,
+            phone: mobileNumber || undefined,
+            city,
+            status: smsSentForThis ? "sent_sms" : "sent",
+          });
           emailsSent++;
 
-          await sleep(600);
+          await sleep(400);
         } catch {
           results.push({ company: name, email, city, status: "error" });
         }
       }
 
       page++;
-      if (companies.length < 20) break; // No more pages
+      if (companies.length < 25) break; // No more pages for this NAF
     }
   }
 
   return NextResponse.json({
     sent: emailsSent,
+    sentSms: smsSent,
     total: results.length,
     results,
   });

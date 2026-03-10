@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const SECRET = typeof window !== "undefined"
-  ? new URLSearchParams(window.location.search).get("secret") || ""
-  : "";
+function getSecret() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("secret") || "";
+}
 
 interface DashboardData {
   orders: {
@@ -21,28 +23,48 @@ interface DashboardData {
 interface ProspectResult {
   company: string;
   email: string;
+  phone?: string;
   city: string;
-  status: "sent" | "skip_site" | "skip_email" | "skip_contacted" | "error";
+  status: "sent" | "sent_sms" | "skip_site" | "skip_email" | "skip_contacted" | "error";
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending:    { label: "En attente",   color: "#f59e0b" },
-  paid:       { label: "Payé",          color: "#3b82f6" },
-  generating: { label: "Génération",   color: "#8b5cf6" },
-  delivered:  { label: "Livré",         color: "#10b981" },
-  error:      { label: "Erreur",        color: "#ef4444" },
+const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  pending:    { label: "En attente",  color: "#f59e0b", bg: "rgba(245,158,11,.12)" },
+  paid:       { label: "Payé",         color: "#3b82f6", bg: "rgba(59,130,246,.12)" },
+  generating: { label: "Génération",  color: "#8b5cf6", bg: "rgba(139,92,246,.12)" },
+  delivered:  { label: "Livré",        color: "#10b981", bg: "rgba(16,185,129,.12)" },
+  error:      { label: "Erreur",       color: "#ef4444", bg: "rgba(239,68,68,.12)"  },
 };
 
+const RESULT_META: Record<ProspectResult["status"], { icon: string; color: string; label: string }> = {
+  sent:              { icon: "✉️", color: "#10b981", label: "Email envoyé" },
+  sent_sms:          { icon: "📱", color: "#a78bfa", label: "Email + SMS" },
+  skip_site:         { icon: "🌐", color: "#f59e0b", label: "A déjà un site" },
+  skip_email:        { icon: "📭", color: "#6b7280", label: "Email introuvable" },
+  skip_contacted:    { icon: "📋", color: "#4b5563", label: "Déjà contacté" },
+  error:             { icon: "❌", color: "#ef4444", label: "Erreur" },
+};
+
+const MAX_OPTIONS = [10, 50, 100, 200, 500, 1000];
+
 export default function AdminPage() {
-  const [secret, setSecret] = useState(SECRET);
+  const [secret, setSecret] = useState("");
+  const [secretInput, setSecretInput] = useState("");
   const [authed, setAuthed] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [prospecting, setProspecting] = useState(false);
   const [dept, setDept] = useState("");
-  const [maxEmails, setMaxEmails] = useState("10");
-  const [prospectResults, setProspectResults] = useState<{ sent: number; total: number; results: ProspectResult[] } | null>(null);
+  const [maxEmails, setMaxEmails] = useState(100);
+  const [prospectResults, setProspectResults] = useState<{ sent: number; sentSms: number; total: number; results: ProspectResult[] } | null>(null);
   const [prospectError, setProspectError] = useState("");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "prospect">("dashboard");
+
+  useEffect(() => {
+    const s = getSecret();
+    if (s) { setSecret(s); setSecretInput(s); loadDashboard(s); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadDashboard = useCallback(async (sec: string) => {
     setLoading(true);
@@ -52,16 +74,13 @@ export default function AdminPage() {
       const json = await res.json();
       setData(json);
       setAuthed(true);
-    } catch {
-      setAuthed(false);
+      setSecret(sec);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const handleLogin = async () => {
-    await loadDashboard(secret);
-  };
+  const handleLogin = () => loadDashboard(secretInput);
 
   const handleProspect = async () => {
     setProspecting(true);
@@ -71,7 +90,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/prospect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret, departement: dept || undefined, max: parseInt(maxEmails) }),
+        body: JSON.stringify({ secret, departement: dept.trim() || undefined, max: maxEmails }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Erreur");
@@ -84,174 +103,256 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => {
-    if (SECRET) loadDashboard(SECRET);
-  }, [loadDashboard]);
+  const s = (key: string) => data?.orders.byStatus[key] || 0;
 
+  /* ── LOGIN ── */
   if (!authed) {
     return (
-      <div style={{ minHeight: "100vh", background: "#07070f", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "system-ui, sans-serif" }}>
-        <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: 32, width: "100%", maxWidth: 360 }}>
-          <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>Admin</div>
-          <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Entrez le mot de passe admin</div>
+      <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-purple-600/10 blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-blue-500/8 blur-3xl" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-3xl p-8 w-full max-w-sm relative z-10"
+        >
+          <div className="text-2xl font-black text-white mb-1">
+            Alexandre<span className="gradient-text">Dev</span>
+          </div>
+          <div className="text-gray-500 text-sm mb-6">Accès administration</div>
           <input
             type="password"
-            value={secret}
-            onChange={e => setSecret(e.target.value)}
+            value={secretInput}
+            onChange={e => setSecretInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleLogin()}
-            placeholder="Secret admin"
-            style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.05)", color: "#fff", fontSize: 14, marginBottom: 12, outline: "none", boxSizing: "border-box" }}
+            placeholder="Mot de passe admin"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors text-sm mb-3"
           />
           <button
             onClick={handleLogin}
-            style={{ width: "100%", background: "linear-gradient(135deg,#7c3aed,#3b82f6)", color: "#fff", border: "none", borderRadius: 12, padding: "13px", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+            disabled={loading}
+            className="w-full btn-gradient px-5 py-3 rounded-xl text-white font-bold text-sm"
           >
-            Accéder →
+            {loading ? "Vérification..." : "Accéder →"}
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  const s = (key: string) => data?.orders.byStatus[key] || 0;
-
+  /* ── DASHBOARD ── */
   return (
-    <div style={{ minHeight: "100vh", background: "#07070f", color: "#f0f0ff", fontFamily: "system-ui, sans-serif", padding: "20px 16px", maxWidth: 560, margin: "0 auto" }}>
-
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>Alexandre<span style={{ background: "linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Dev</span></div>
-          <div style={{ color: "#6b7280", fontSize: 12, marginTop: 2 }}>Tableau de bord admin</div>
-        </div>
-        <button onClick={() => loadDashboard(secret)} disabled={loading} style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#9ca3af", borderRadius: 10, padding: "8px 14px", fontSize: 13, cursor: "pointer" }}>
-          {loading ? "..." : "↻ Rafraîchir"}
-        </button>
+    <div className="min-h-screen gradient-mesh">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-purple-600/8 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-blue-500/6 blur-3xl" />
       </div>
 
-      {/* Commandes stats */}
-      <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 14 }}>Commandes</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-          <Stat label="Total" value={data?.orders.total || 0} color="#a78bfa" />
-          <Stat label="Livrés" value={s("delivered")} color="#10b981" />
-          <Stat label="En cours" value={s("generating") + s("paid") + s("pending")} color="#f59e0b" />
-        </div>
+      <div className="relative z-10 max-w-lg mx-auto px-4 py-6">
 
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 10 }}>Récentes</div>
-        {data?.orders.recent.map(o => (
-          <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0ff" }}>{o.business_name || "—"}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>{o.email}</div>
-            </div>
-            <div style={{ background: (STATUS_LABELS[o.status]?.color || "#888") + "22", color: STATUS_LABELS[o.status]?.color || "#888", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 600 }}>
-              {STATUS_LABELS[o.status]?.label || o.status}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Prospection stats */}
-      <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280" }}>Prospection</div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: "#a78bfa" }}>{data?.prospection.total || 0} <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 400 }}>emails</span></div>
-        </div>
-
-        {data?.prospection.recent.slice(0, 4).map((p, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0ff" }}>{p.company_name}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>{p.city} · {p.email}</div>
-            </div>
-            <div style={{ fontSize: 11, color: "#4b5563" }}>{new Date(p.contacted_at).toLocaleDateString("fr")}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Lancer prospection */}
-      <div style={{ background: "rgba(124,58,237,.08)", border: "1px solid rgba(124,58,237,.25)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8b5cf6", marginBottom: 16 }}>Lancer la prospection</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center mb-6">
           <div>
-            <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 5 }}>Département</label>
-            <input
-              value={dept}
-              onChange={e => setDept(e.target.value)}
-              placeholder="Ex : 38, 69, 75…"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.05)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" }}
-            />
+            <div className="text-xl font-black text-white">Alexandre<span className="gradient-text">Dev</span></div>
+            <div className="text-gray-500 text-xs mt-0.5">Administration</div>
           </div>
-          <div>
-            <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 5 }}>Emails max</label>
-            <select
-              value={maxEmails}
-              onChange={e => setMaxEmails(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.1)", background: "#1a1a2e", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+          <button
+            onClick={() => loadDashboard(secret)}
+            disabled={loading}
+            className="glass px-3 py-2 rounded-xl text-gray-400 text-xs font-medium hover:text-white transition-colors"
+          >
+            {loading ? "..." : "↻ Refresh"}
+          </button>
+        </motion.div>
+
+        {/* Tabs */}
+        <div className="glass rounded-2xl p-1 flex gap-1 mb-5">
+          {(["dashboard", "prospect"] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? "btn-gradient text-white" : "text-gray-400 hover:text-white"}`}
             >
-              {[5, 10, 15].map(n => <option key={n} value={n}>{n} emails</option>)}
-            </select>
-          </div>
+              {tab === "dashboard" ? "📊 Dashboard" : "🚀 Prospection"}
+            </button>
+          ))}
         </div>
 
-        <button
-          onClick={handleProspect}
-          disabled={prospecting}
-          style={{ width: "100%", background: prospecting ? "rgba(124,58,237,.4)" : "linear-gradient(135deg,#7c3aed,#3b82f6)", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, cursor: prospecting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-        >
-          {prospecting ? (
-            <>
-              <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              Envoi en cours…
-            </>
-          ) : "🚀 Lancer la prospection"}
-        </button>
+        <AnimatePresence mode="wait">
 
-        {prospectError && (
-          <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.3)", color: "#f87171", fontSize: 13 }}>
-            ❌ {prospectError}
-          </div>
-        )}
+          {/* ── TAB DASHBOARD ── */}
+          {activeTab === "dashboard" && (
+            <motion.div key="dashboard" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
 
-        {prospectResults && (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-              <Stat label="Envoyés" value={prospectResults.sent} color="#10b981" small />
-              <Stat label="Ont site" value={prospectResults.results.filter(r => r.status === "skip_site").length} color="#f59e0b" small />
-              <Stat label="Sans mail" value={prospectResults.results.filter(r => r.status === "skip_email").length} color="#6b7280" small />
-            </div>
-            <div style={{ maxHeight: 220, overflowY: "auto" }}>
-              {prospectResults.results.filter(r => r.status === "sent").map((r, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.05)", fontSize: 12 }}>
-                  <div>
-                    <span style={{ color: "#10b981", marginRight: 6 }}>✓</span>
-                    <span style={{ color: "#f0f0ff" }}>{r.company}</span>
-                    <span style={{ color: "#6b7280", marginLeft: 6 }}>{r.city}</span>
-                  </div>
-                  <span style={{ color: "#6b7280" }}>{r.email}</span>
+              {/* Commandes stats */}
+              <div className="glass rounded-2xl p-5">
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase mb-4">Commandes</div>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <StatCard label="Total" value={data?.orders.total || 0} color="#a78bfa" />
+                  <StatCard label="Livrés" value={s("delivered")} color="#10b981" />
+                  <StatCard label="En cours" value={s("generating") + s("paid") + s("pending")} color="#f59e0b" />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+                <div className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">Récentes</div>
+                <div className="space-y-0">
+                  {data?.orders.recent.map((o, i) => (
+                    <motion.div
+                      key={o.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      className="flex justify-between items-center py-2.5 border-b border-white/5 last:border-0"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-white">{o.business_name || "—"}</div>
+                        <div className="text-xs text-gray-500">{o.email}</div>
+                      </div>
+                      <div
+                        className="text-xs font-semibold px-2 py-1 rounded-lg"
+                        style={{ color: STATUS_META[o.status]?.color, background: STATUS_META[o.status]?.bg }}
+                      >
+                        {STATUS_META[o.status]?.label || o.status}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
 
-      <div style={{ textAlign: "center", color: "#374151", fontSize: 12 }}>
-        alexwebdesign.pro · Admin
-      </div>
+              {/* Prospection stats */}
+              <div className="glass rounded-2xl p-5">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Prospection</div>
+                  <div className="text-2xl font-black text-purple-400">
+                    {data?.prospection.total || 0}
+                    <span className="text-xs text-gray-500 font-normal ml-1">emails</span>
+                  </div>
+                </div>
+                {data?.prospection.recent.map((p, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex justify-between items-center py-2.5 border-b border-white/5 last:border-0"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-white">{p.company_name}</div>
+                      <div className="text-xs text-gray-500">{p.city} · {p.email}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">{new Date(p.contacted_at).toLocaleDateString("fr")}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          {/* ── TAB PROSPECTION ── */}
+          {activeTab === "prospect" && (
+            <motion.div key="prospect" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
+
+              {/* Config */}
+              <div className="glass rounded-2xl p-5">
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase mb-4">Configuration</div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1.5">Département</label>
+                    <input
+                      value={dept}
+                      onChange={e => setDept(e.target.value)}
+                      placeholder="Ex : 38, 69, 75"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1.5">Emails max</label>
+                    <select
+                      value={maxEmails}
+                      onChange={e => setMaxEmails(parseInt(e.target.value))}
+                      className="w-full bg-gray-900 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 transition-colors"
+                    >
+                      {MAX_OPTIONS.map(n => (
+                        <option key={n} value={n}>{n} emails</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {maxEmails >= 200 && (
+                  <div className="text-xs text-yellow-500/80 bg-yellow-500/8 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
+                    ⏱ {maxEmails} emails peut prendre {Math.round(maxEmails * 2.5 / 60)} à {Math.round(maxEmails * 4 / 60)} min. La fenêtre doit rester ouverte.
+                  </div>
+                )}
+
+                <button
+                  onClick={handleProspect}
+                  disabled={prospecting}
+                  className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all flex items-center justify-center gap-2 ${prospecting ? "bg-purple-900/50 cursor-not-allowed" : "btn-gradient"}`}
+                >
+                  {prospecting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Envoi en cours… gardez la page ouverte
+                    </>
+                  ) : `🚀 Lancer — ${maxEmails} emails`}
+                </button>
+
+                {prospectError && (
+                  <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
+                    ❌ {prospectError}
+                  </div>
+                )}
+              </div>
+
+              {/* Résultats */}
+              <AnimatePresence>
+                {prospectResults && (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-5">
+                    <div className="text-xs font-bold tracking-widest text-gray-500 uppercase mb-4">Résultats</div>
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <StatCard label="Envoyés" value={prospectResults.sent} color="#10b981" />
+                      <StatCard label="Avec SMS" value={prospectResults.sentSms || 0} color="#a78bfa" />
+                      <StatCard label="Ignorés" value={prospectResults.total - prospectResults.sent} color="#6b7280" />
+                    </div>
+                    <div className="space-y-0 max-h-72 overflow-y-auto">
+                      {prospectResults.results.map((r, i) => {
+                        const meta = RESULT_META[r.status];
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: Math.min(i * 0.03, 0.5) }}
+                            className="flex justify-between items-center py-2 border-b border-white/5 last:border-0"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span>{meta.icon}</span>
+                              <div className="min-w-0">
+                                <div className="text-xs font-semibold text-white truncate">{r.company}</div>
+                                {r.email && <div className="text-xs text-gray-500 truncate">{r.email}{r.phone ? ` · ${r.phone}` : ""}</div>}
+                              </div>
+                            </div>
+                            <div className="text-xs font-medium ml-2 shrink-0" style={{ color: meta.color }}>{meta.label}</div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-function Stat({ label, value, color, small = false }: { label: string; value: number; color: string; small?: boolean }) {
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 10, padding: small ? "10px 12px" : "12px 14px", textAlign: "center" }}>
-      <div style={{ fontSize: small ? 20 : 26, fontWeight: 900, color }}>{value}</div>
-      <div style={{ fontSize: 10, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 2 }}>{label}</div>
+    <div className="bg-white/3 rounded-xl py-3 px-2 text-center">
+      <div className="text-2xl font-black" style={{ color }}>{value}</div>
+      <div className="text-xs text-gray-500 uppercase tracking-wider mt-0.5">{label}</div>
     </div>
   );
 }
