@@ -69,109 +69,104 @@ export async function POST(req: NextRequest) {
         const city = getCity(departement);
         send({ type: "start", dept: departement || "France", city, total: contactedSirens.size });
 
+        // ── Phase 1 : collecte toutes les entreprises en parallèle ──
+        send({ type: "collecting" });
+
+        const seenPlaceIds = new Set<string>();
+        type Biz = { placeId: string; name: string; city: string };
+        const allBusinesses: Biz[] = [];
+
+        // Recherches par batch de 8 catégories simultanément
+        const BATCH = 8;
+        for (let i = 0; i < BUSINESS_CATEGORIES.length; i += BATCH) {
+          if (stopped()) break;
+          const batch = BUSINESS_CATEGORIES.slice(i, i + BATCH);
+          const results = await Promise.allSettled(
+            batch.map(cat => searchBusinesses({ category: cat, departement }))
+          );
+          for (const res of results) {
+            if (res.status !== "fulfilled") continue;
+            for (const biz of res.value.businesses) {
+              if (seenPlaceIds.has(biz.placeId)) continue;
+              seenPlaceIds.add(biz.placeId);
+              allBusinesses.push(biz as Biz);
+            }
+          }
+        }
+
+        // Tri alphabétique par nom
+        allBusinesses.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
+        send({ type: "collected", count: allBusinesses.length });
+
+        // ── Phase 2 : traitement par ordre alphabétique ──
         let emailsSent = 0;
         let smsSent = 0;
         let skippedSite = 0;
         let skippedEmail = 0;
 
-        const shuffled = [...BUSINESS_CATEGORIES].sort((a, b) => a.localeCompare(b, "fr"));
-        const seenPlaceIds = new Set<string>();
+        for (const biz of allBusinesses) {
+          if (stopped() || emailsSent >= maxEmails) break;
 
-        outer:
-        for (const category of shuffled) {
-          if (stopped()) break;
+          const name = biz.name;
+          const bizCity = biz.city;
 
-          send({ type: "category", category });
+          if (contactedSirens.has(biz.placeId)) continue;
 
-          let pageToken: string | undefined;
-          let pageCount = 0;
+          send({ type: "checking", name, city: bizCity });
 
-          do {
-            if (stopped()) break outer;
+          const details = await getPlaceDetails(biz.placeId);
+          if (details.hasWebsite) {
+            send({ type: "skip_site", name, city: bizCity, website: details.website });
+            skippedSite++;
+            contactedSirens.add(biz.placeId);
+            continue;
+          }
 
-            let result;
-            try {
-              result = await searchBusinesses({ category, departement, pageToken });
-            } catch (e) {
-              send({ type: "warn", message: `Google Maps erreur (${category}): ${e}` });
-              break;
+          const email = await findEmailForCompany(name, bizCity);
+          if (!email) {
+            const phone = mobileE164(details.phone);
+            send({ type: "skip_email", name, city: bizCity, phone: phone || undefined });
+            skippedEmail++;
+            continue;
+          }
+
+          try {
+            await sendProspectionEmail({ to: email, companyName: name });
+
+            const mobileNumber = mobileE164(details.phone);
+            let smsSentForThis = false;
+            if (mobileNumber) {
+              const smsText =
+                `Bonjour, je suis Alexandre (16 ans, dev web). ` +
+                `Je crée des sites pro pour les PME à seulement 149€. ` +
+                `Intéressé pour ${name} ? Voir mes réalisations : ${siteUrl}`;
+              smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
+              if (smsSentForThis) smsSent++;
             }
 
-            if (result.businesses.length === 0) break;
+            await supabase.from("prospected_companies").insert({
+              siren: biz.placeId,
+              company_name: name,
+              email,
+              city: bizCity,
+            });
+            contactedSirens.add(biz.placeId);
+            emailsSent++;
 
-            for (const biz of result.businesses) {
-              if (stopped() || emailsSent >= maxEmails) break outer;
-              if (seenPlaceIds.has(biz.placeId)) continue;
-              seenPlaceIds.add(biz.placeId);
+            send({
+              type: smsSentForThis ? "sent_sms" : "sent",
+              name,
+              city: bizCity,
+              email,
+              phone: mobileNumber || undefined,
+              total: emailsSent,
+            });
 
-              const name = biz.name;
-              const bizCity = biz.city;
-
-              if (contactedSirens.has(biz.placeId)) {
-                send({ type: "skip_contacted", name, city: bizCity });
-                continue;
-              }
-
-              send({ type: "checking", name, city: bizCity });
-
-              const details = await getPlaceDetails(biz.placeId);
-              if (details.hasWebsite) {
-                send({ type: "skip_site", name, city: bizCity, website: details.website });
-                skippedSite++;
-                contactedSirens.add(biz.placeId);
-                continue;
-              }
-
-              const email = await findEmailForCompany(name, bizCity);
-              if (!email) {
-                const phone = mobileE164(details.phone);
-                send({ type: "skip_email", name, city: bizCity, phone: phone || undefined });
-                skippedEmail++;
-                continue;
-              }
-
-              try {
-                await sendProspectionEmail({ to: email, companyName: name });
-
-                const mobileNumber = mobileE164(details.phone);
-                let smsSentForThis = false;
-                if (mobileNumber) {
-                  const smsText =
-                    `Bonjour, je suis Alexandre (16 ans, dev web). ` +
-                    `Je crée des sites pro pour les PME à seulement 149€. ` +
-                    `Intéressé pour ${name} ? Voir mes réalisations : ${siteUrl}`;
-                  smsSentForThis = await sendBrevoSms(mobileNumber, smsText);
-                  if (smsSentForThis) smsSent++;
-                }
-
-                await supabase.from("prospected_companies").insert({
-                  siren: biz.placeId,
-                  company_name: name,
-                  email,
-                  city: bizCity,
-                });
-                contactedSirens.add(biz.placeId);
-                emailsSent++;
-
-                send({
-                  type: smsSentForThis ? "sent_sms" : "sent",
-                  name,
-                  city: bizCity,
-                  email,
-                  phone: mobileNumber || undefined,
-                  total: emailsSent,
-                });
-
-                await sleep(400);
-              } catch (e) {
-                send({ type: "error", name, message: String(e) });
-              }
-            }
-
-            pageToken = result.nextPageToken;
-            pageCount++;
-            if (pageToken) await sleep(2000);
-          } while (pageToken && pageCount < 3);
+            await sleep(400);
+          } catch (e) {
+            send({ type: "error", name, message: String(e) });
+          }
         }
 
         send({ type: "done", sent: emailsSent, smsSent, skippedSite, skippedEmail });
@@ -181,9 +176,7 @@ export async function POST(req: NextRequest) {
         controller.close();
       }
     },
-    cancel() {
-      // client disconnected / stop button clicked
-    },
+    cancel() {},
   });
 
   return new Response(stream, {

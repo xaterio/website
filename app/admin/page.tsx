@@ -139,8 +139,10 @@ export default function AdminPage() {
             const ev = JSON.parse(part.slice(6));
             if (ev.type === "start") {
               addLog({ type: "start", dept: ev.dept, cityMain: ev.city });
-            } else if (ev.type === "category") {
-              addLog({ type: "category", category: ev.category });
+            } else if (ev.type === "collecting") {
+              addLog({ type: "collecting" });
+            } else if (ev.type === "collected") {
+              addLog({ type: "collected", total: ev.count });
             } else if (ev.type === "checking") {
               addLog({ type: "checking", name: ev.name, city: ev.city });
             } else if (ev.type === "skip_site") {
@@ -490,10 +492,18 @@ function LogLine({ entry }: { entry: LogEntry }) {
       </div>
     );
   }
-  if (entry.type === "category") {
+  if (entry.type === "collecting") {
     return (
-      <div className="text-gray-600 pt-1.5 pb-0.5">
-        <span className="text-gray-500">──</span> {entry.category}
+      <div className="text-purple-400 flex items-center gap-1.5 py-0.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+        Collecte de toutes les catégories en parallèle…
+      </div>
+    );
+  }
+  if (entry.type === "collected") {
+    return (
+      <div className="text-purple-300 border-b border-white/5 pb-1.5 mb-1">
+        ✓ {entry.total} entreprises trouvées — tri alphabétique
       </div>
     );
   }
